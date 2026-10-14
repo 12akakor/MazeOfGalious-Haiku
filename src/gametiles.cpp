@@ -2,8 +2,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
-#include "SDL.h"
-#include "SDL_mixer.h"
+#include "platform/platform.h"
 #include "sound.h"
 #include "MOGtypes.h"
 
@@ -15,7 +14,6 @@
 #include "mog.h"
 
 
-extern SDL_Surface *screen;
 
 /* Paths: */ 
 

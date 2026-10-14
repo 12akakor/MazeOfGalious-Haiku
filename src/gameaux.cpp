@@ -2,9 +2,9 @@
 #include "stdio.h"
 #include "stdlib.h" 
 #include "string.h"
-#include "SDL.h"
-#include "SDL_image.h"
-#include "SDL_mixer.h"
+#include "platform/platform.h"
+#include "platform/audio_mixer.h"
+#include "loadpcx.h"
 #include "sound.h"
 #include "MOGtypes.h"
 
@@ -31,7 +31,6 @@ extern char *s_path;
 extern Bitmap *konami_bmp,*menu_bmp,*tiles_bmp,*tiles2_bmp,*enemy_bmp,*enemy2_bmp,*final_bmp;
 extern int n_tiles;
 extern CTile **tiles;
-extern SDL_Surface *screen;
 
 extern BYTE *col_buffer;
 
@@ -154,7 +153,7 @@ extern int HP_obj_type[HP_OBJS_MAX];
 extern int HP_obj_aux[HP_OBJS_MAX];
 
 /* Teclado: */ 
-extern unsigned char old_keyboard[SDLK_LAST];
+extern unsigned char old_keyboard[MOGK_LAST];
 
 /* Efectos de sonido: */ 
 extern SOUNDT S_pause,S_death,S_gameover,S_worldkey,S_entering;
@@ -183,9 +182,9 @@ extern int zoom;
 
 
 /* Teclas: */ 
-extern SDLKey UP_KEY,DOWN_KEY,LEFT_KEY,RIGHT_KEY;
-extern SDLKey SWORD_KEY,WEAPON_KEY,ITEM_KEY,PAUSE_KEY;
-extern SDLKey last_word[16];
+extern MOGKey UP_KEY,DOWN_KEY,LEFT_KEY,RIGHT_KEY;
+extern MOGKey SWORD_KEY,WEAPON_KEY,ITEM_KEY,PAUSE_KEY;
+extern MOGKey last_word[16];
 
 extern char password[48];
 
@@ -225,72 +224,72 @@ void ReleaseGraphics(void)
 void SetSFXVolume(int volume) 
 {
 	if (sound_enabled) {
-		Mix_VolumeChunk(S_gamestart,volume);
-		Mix_VolumeChunk(S_jump,volume);
-		Mix_VolumeChunk(S_sword,volume);
-		Mix_VolumeChunk(S_swordhit,volume);
-		Mix_VolumeChunk(S_item,volume);
-		Mix_VolumeChunk(S_ah,volume);
-		Mix_VolumeChunk(S_ah2,volume);
-		Mix_VolumeChunk(S_powerup,volume);
-		Mix_VolumeChunk(S_enemyhit,volume);
-		Mix_VolumeChunk(S_door,volume);
-		Mix_VolumeChunk(S_enemykill,volume);
-		Mix_VolumeChunk(S_ladderdisapear,volume);
-		Mix_VolumeChunk(S_armourhit,volume);
-		Mix_VolumeChunk(S_pause,volume);
-		Mix_VolumeChunk(S_death,volume);
-		Mix_VolumeChunk(S_gameover,volume);
-		Mix_VolumeChunk(S_worldkey,volume);
-		Mix_VolumeChunk(S_entering,volume);
-		Mix_VolumeChunk(S_enterwater,volume);
-		Mix_VolumeChunk(S_select,volume);
-		Mix_VolumeChunk(S_firearrow,volume);
-		Mix_VolumeChunk(S_firearrow2,volume);
-		Mix_VolumeChunk(S_fall,volume);
-		Mix_VolumeChunk(S_waterhit,volume);
-		Mix_VolumeChunk(S_lavahit,volume);
-		Mix_VolumeChunk(S_nocoins,volume);
-		Mix_VolumeChunk(S_stones,volume);
-		Mix_VolumeChunk(S_blob,volume);
-		Mix_VolumeChunk(S_shield,volume);
-		Mix_VolumeChunk(S_flapwings,volume);
-		Mix_VolumeChunk(S_rotatedoor,volume);
-		Mix_VolumeChunk(S_demon2ball,volume);
-		Mix_VolumeChunk(S_appearing,volume);
-		Mix_VolumeChunk(S_firebreath,volume);
-		Mix_VolumeChunk(S_F1,volume);
-		Mix_VolumeChunk(S_karrow,volume);
-		Mix_VolumeChunk(S_jumptree,volume);
-		Mix_VolumeChunk(S_skeletonhit,volume);
-		Mix_VolumeChunk(S_enemybullet,volume);
-		Mix_VolumeChunk(S_headbullet,volume);
-		Mix_VolumeChunk(S_dropmine,volume);
-		Mix_VolumeChunk(S_firefire,volume);
-		Mix_VolumeChunk(S_fireball,volume);
-		Mix_VolumeChunk(S_fireball2,volume);
-		Mix_VolumeChunk(S_wdoor,volume);
-		Mix_VolumeChunk(S_door2,volume);
-		Mix_VolumeChunk(S_demonhit,volume);
-		Mix_VolumeChunk(S_bearbullet,volume);
-		Mix_VolumeChunk(S_chickenbomb,volume);
-		Mix_VolumeChunk(S_colormonster,volume);
-		Mix_VolumeChunk(S_waterstone,volume);
-		Mix_VolumeChunk(S_demon4jump,volume);
-		Mix_VolumeChunk(S_rockman,volume);
-		Mix_VolumeChunk(S_mine,volume);
-		Mix_VolumeChunk(S_bible,volume);
-		Mix_VolumeChunk(S_demon1bones,volume);
-		Mix_VolumeChunk(S_demon1jump,volume);
-		Mix_VolumeChunk(S_owl,volume);
-		Mix_VolumeChunk(S_demon7bullet,volume);
-		Mix_VolumeChunk(S_demon8bullet,volume);
-		Mix_VolumeChunk(S_flamebullet,volume);
-		Mix_VolumeChunk(S_snakebullet,volume);
-		Mix_VolumeChunk(S_gorilla,volume);
-		Mix_VolumeChunk(S_lizardtongue,volume);
-		Mix_VolumeChunk(S_bdemonbullet,volume);
-		Mix_VolumeChunk(S_lightning,volume);
+		snd_set_volume(S_gamestart,volume);
+		snd_set_volume(S_jump,volume);
+		snd_set_volume(S_sword,volume);
+		snd_set_volume(S_swordhit,volume);
+		snd_set_volume(S_item,volume);
+		snd_set_volume(S_ah,volume);
+		snd_set_volume(S_ah2,volume);
+		snd_set_volume(S_powerup,volume);
+		snd_set_volume(S_enemyhit,volume);
+		snd_set_volume(S_door,volume);
+		snd_set_volume(S_enemykill,volume);
+		snd_set_volume(S_ladderdisapear,volume);
+		snd_set_volume(S_armourhit,volume);
+		snd_set_volume(S_pause,volume);
+		snd_set_volume(S_death,volume);
+		snd_set_volume(S_gameover,volume);
+		snd_set_volume(S_worldkey,volume);
+		snd_set_volume(S_entering,volume);
+		snd_set_volume(S_enterwater,volume);
+		snd_set_volume(S_select,volume);
+		snd_set_volume(S_firearrow,volume);
+		snd_set_volume(S_firearrow2,volume);
+		snd_set_volume(S_fall,volume);
+		snd_set_volume(S_waterhit,volume);
+		snd_set_volume(S_lavahit,volume);
+		snd_set_volume(S_nocoins,volume);
+		snd_set_volume(S_stones,volume);
+		snd_set_volume(S_blob,volume);
+		snd_set_volume(S_shield,volume);
+		snd_set_volume(S_flapwings,volume);
+		snd_set_volume(S_rotatedoor,volume);
+		snd_set_volume(S_demon2ball,volume);
+		snd_set_volume(S_appearing,volume);
+		snd_set_volume(S_firebreath,volume);
+		snd_set_volume(S_F1,volume);
+		snd_set_volume(S_karrow,volume);
+		snd_set_volume(S_jumptree,volume);
+		snd_set_volume(S_skeletonhit,volume);
+		snd_set_volume(S_enemybullet,volume);
+		snd_set_volume(S_headbullet,volume);
+		snd_set_volume(S_dropmine,volume);
+		snd_set_volume(S_firefire,volume);
+		snd_set_volume(S_fireball,volume);
+		snd_set_volume(S_fireball2,volume);
+		snd_set_volume(S_wdoor,volume);
+		snd_set_volume(S_door2,volume);
+		snd_set_volume(S_demonhit,volume);
+		snd_set_volume(S_bearbullet,volume);
+		snd_set_volume(S_chickenbomb,volume);
+		snd_set_volume(S_colormonster,volume);
+		snd_set_volume(S_waterstone,volume);
+		snd_set_volume(S_demon4jump,volume);
+		snd_set_volume(S_rockman,volume);
+		snd_set_volume(S_mine,volume);
+		snd_set_volume(S_bible,volume);
+		snd_set_volume(S_demon1bones,volume);
+		snd_set_volume(S_demon1jump,volume);
+		snd_set_volume(S_owl,volume);
+		snd_set_volume(S_demon7bullet,volume);
+		snd_set_volume(S_demon8bullet,volume);
+		snd_set_volume(S_flamebullet,volume);
+		snd_set_volume(S_snakebullet,volume);
+		snd_set_volume(S_gorilla,volume);
+		snd_set_volume(S_lizardtongue,volume);
+		snd_set_volume(S_bdemonbullet,volume);
+		snd_set_volume(S_lightning,volume);
 	} /* if */ 
 } /* SetSFXVolume */ 
 
@@ -2572,16 +2571,16 @@ bool cargar_configuracion(char *filename)
 
 	/* Keyboard configuration: */ 
 	if (4!=fscanf(fp,"%i %i %i %i",&itmp[0],&itmp[1],&itmp[2],&itmp[3])) return false;
-	UP_KEY = (SDLKey) itmp[0];
-	DOWN_KEY = (SDLKey) itmp[1];
-	LEFT_KEY = (SDLKey) itmp[2];
-	RIGHT_KEY = (SDLKey) itmp[3];
+	UP_KEY = (MOGKey) itmp[0];
+	DOWN_KEY = (MOGKey) itmp[1];
+	LEFT_KEY = (MOGKey) itmp[2];
+	RIGHT_KEY = (MOGKey) itmp[3];
 
 	if (4!=fscanf(fp,"%i %i %i %i",&itmp[0],&itmp[1],&itmp[2],&itmp[3])) return false;
-	SWORD_KEY = (SDLKey) itmp[0];
-	WEAPON_KEY = (SDLKey) itmp[1];
-	ITEM_KEY = (SDLKey) itmp[2];
-	PAUSE_KEY = (SDLKey) itmp[3];
+	SWORD_KEY = (MOGKey) itmp[0];
+	WEAPON_KEY = (MOGKey) itmp[1];
+	ITEM_KEY = (MOGKey) itmp[2];
+	PAUSE_KEY = (MOGKey) itmp[3];
 
 	/* Graphics path: */ 
 	fscanf(fp,"%s",tmp);
@@ -2619,14 +2618,14 @@ int find_path(char **paths, int n, const char *name);
 
 void configuracion_por_defecto(void)
 {
-	UP_KEY=SDLK_UP;
-	DOWN_KEY=SDLK_DOWN;
-	LEFT_KEY=SDLK_LEFT;
-	RIGHT_KEY=SDLK_RIGHT;
-	SWORD_KEY=SDLK_SPACE;
-	WEAPON_KEY=SDLK_m;
-	ITEM_KEY=SDLK_F1;
-	PAUSE_KEY=SDLK_F2;
+	UP_KEY=MOGK_UP;
+	DOWN_KEY=MOGK_DOWN;
+	LEFT_KEY=MOGK_LEFT;
+	RIGHT_KEY=MOGK_RIGHT;
+	SWORD_KEY=MOGK_SPACE;
+	WEAPON_KEY=MOGK_m;
+	ITEM_KEY=MOGK_F1;
+	PAUSE_KEY=MOGK_F2;
 
 	// default gfx set: naramura
 	// Port: upstream used fixed indices (g_paths[4], s_paths[2]), which read
@@ -2786,7 +2785,7 @@ void clear_typed_word(void)
 {
 	int i;
 
-	for(i=0;i<16;i++) last_word[i]=SDLK_UNKNOWN;
+	for(i=0;i<16;i++) last_word[i]=MOGK_UNKNOWN;
 
 } /* clear_typed_word */ 
 
@@ -2796,12 +2795,12 @@ void check_typed_word(void)
 {
 	BYTE *keyboard;
 
-	SDL_PumpEvents();
-	keyboard = (unsigned char *)SDL_GetKeyState(NULL);
+	plat_pump_events();
+	keyboard = plat_key_state();
 
-	SDLKey i;
+	MOGKey i;
 	int j;
-	for(i=SDLK_a;i<=SDLK_z;i=SDLKey(int(i)+1)) {
+	for(i=MOGK_a;i<=MOGK_z;i=MOGKey(int(i)+1)) {
 		if (keyboard[i] && !old_keyboard[i]) {
 			for(j=15;j>0;j--) last_word[j]=last_word[j-1];
 			last_word[0]=i;
@@ -2813,7 +2812,8 @@ void check_typed_word(void)
 
 bool typed_word_p(char *word)
 {
-	char *str,c;
+	const char *str;
+	char c;
 	int i,l;
 
 	l=strlen(word);
@@ -2821,7 +2821,7 @@ bool typed_word_p(char *word)
 
 	for(i=0;i<l;i++) {
 		c=word[(l-1)-i];
-		str=SDL_GetKeyName(last_word[i]);
+		str=plat_key_name(last_word[i]);
 		if (str[1]!=0 || str[0]!=c) return false;
 	} /* for */ 
 
@@ -3036,20 +3036,18 @@ bool iswall_or_blockingobject(int x,int y)
 void get_palette(void)
 {
 	char tmp[256];
+	unsigned char rgb[768];
 	/* Get the palette: */ 
-	SDL_Surface *img=0;
+	/* Port: read the 256 colour PCX palette directly (was IMG_Load +
+	   SDL_SetColors). */
 
 	sprintf(tmp,"%skonami.pcx",g_path);
-	img = IMG_Load(tmp);
-	if (img!=0) {
-		SDL_SetColors(screen, img->format->palette->colors, 0, img->format->palette->ncolors);
-		SDL_FreeSurface(img);
+	if (pcx_read_palette(tmp,rgb)) {
+		plat_set_palette(rgb);
 	} else {
 		sprintf(tmp,"%skonami.pcx",default_g_path);
-		img = IMG_Load(tmp);
-		if (img!=0) {
-			SDL_SetColors(screen, img->format->palette->colors, 0, img->format->palette->ncolors);
-			SDL_FreeSurface(img);
+		if (pcx_read_palette(tmp,rgb)) {
+			plat_set_palette(rgb);
 		} /* if */ 
 	} /* if */ 
 } /* get_palette */ 

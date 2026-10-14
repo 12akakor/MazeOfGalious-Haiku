@@ -1,7 +1,7 @@
 #include "string.h"
 #include "math.h"
 #include "MOGtypes.h"
-#include "SDL.h"
+#include "platform/platform.h"
 
 #include "drawing.h"
 #include "bitmaps.h"
@@ -33,7 +33,11 @@ extern int pers_x, pers_y;
 
 extern int n_fired_arrows;
 
-void Render(SDL_Surface *surface)
+/* Port: the views are composed into present_buffer (640x400, 8 bit), which
+   is handed to the platform layer (was: copied into an SDL surface). */
+BYTE *present_buffer = NULL;
+
+void Render(void)
 {
 	int i;
 
@@ -45,14 +49,17 @@ void Render(SDL_Surface *surface)
 		}
 		memset(buffer_screen, 0, SCREEN_X * SCREEN_Y);
 	} /* if */ 
+	if (present_buffer == NULL) {
+		present_buffer = new BYTE[SCREEN_X * SCREEN_Y];
+		if (present_buffer == NULL) {
+			return;
+		}
+		memset(present_buffer, 0, SCREEN_X * SCREEN_Y);
+	} /* if */ 
 
 	/* Ejecutar un ciclo de juego: */ 
 	GameCycle(buffer_screen, SCREEN_X, SCREEN_Y);
 
-    // Bloquear la superficie primaria
-	if (SDL_MUSTLOCK(surface)) {
-		SDL_LockSurface(surface);
-	}
 	
 	// Transferir la imagen de 'buffer_screen' a la memoria de vÌdeo:
 	for (i = 0;i < MAX_VIEWS; i++) {
@@ -69,7 +76,7 @@ void Render(SDL_Surface *surface)
 
 				for (y = 0;y < physic_dy[i]; y++) {
 					orig = buffer_screen + logic_x[i] + (logic_y[i] + y) * SCREEN_X;
-					dest = (BYTE *)surface->pixels + physic_x[i] + (physic_y[i] + y) * surface->pitch;
+					dest = present_buffer + physic_x[i] + (physic_y[i] + y) * SCREEN_X;
 					memcpy(dest, orig, physic_dx[i]);
 				} /* for */ 
 			} else {
@@ -81,7 +88,7 @@ void Render(SDL_Surface *surface)
 				for (y = 0;y < physic_dy[i]; y++, offsy += inc_y) {
 									
 					orig = buffer_screen + (offsy >> 8) * SCREEN_X;
-					dest = (BYTE *)surface->pixels + physic_x[i] + (physic_y[i] + y) * surface->pitch;
+					dest = present_buffer + physic_x[i] + (physic_y[i] + y) * SCREEN_X;
 					offsx = logic_x[i] << 8;
 					
 					for (x = 0; x < physic_dx[i]; x++, offsx += inc_x) {
@@ -92,10 +99,7 @@ void Render(SDL_Surface *surface)
 		} /* if */ 
 	} /* if */ 
 		
-	// Desbloquear la superficie primaria
-	if (SDL_MUSTLOCK(surface)) {
-		SDL_UnlockSurface(surface);
-	}
+	plat_present(present_buffer);
 
 } /* Render */ 
 

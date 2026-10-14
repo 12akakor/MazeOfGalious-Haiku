@@ -6,26 +6,17 @@
 #include <time.h>
 #endif
 
-#include "SDL.h"
+#include "platform/platform.h"
 
 bool IsAltPressed()
 {
-	SDLMod modifiers;
-
-	SDL_PumpEvents();
-	modifiers=SDL_GetModState();
-   
-	return ((modifiers & KMOD_ALT) != 0);
+	plat_pump_events();
+	return (plat_modifiers() & PLAT_MOD_ALT) != 0;
 } /* IsAltPressed */ 
 
 
 bool IsAltPressed2()
 {
-#ifdef _WIN32
-    return (GetKeyState (VK_MENU) & 0x8000) ? true : false;
-#else
-	SDL_PumpEvents();
-    return ( (SDL_GetModState() & KMOD_ALT) != 0);
-#endif
+	plat_pump_events();
+	return (plat_modifiers() & PLAT_MOD_ALT) != 0;
 }
-

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../platform/audio_mixer.h"
+
 namespace {
 
 struct Event { int frame, key, down; };
@@ -153,4 +155,23 @@ th_rand(void)
 	/* Simple LCG, identical on all platforms. */
 	sSeed = sSeed * 1103515245u + 12345u;
 	return (int)((sSeed >> 16) & 0x7fff);
+}
+
+
+extern "C" void
+th_audio_frame(void)
+{
+	init();
+	if (!sActive || !mixer_is_open())
+		return;
+	/* 44100 / 25 frames per game frame. */
+	static int16_t buffer[1764 * 2];
+	mixer_render(buffer, 1764);
+	char name[600];
+	snprintf(name, sizeof(name), "%s/audio.raw", sOut);
+	FILE* fp = fopen(name, sFrame == 0 ? "wb" : "ab");
+	if (fp != NULL) {
+		fwrite(buffer, sizeof(int16_t), 1764 * 2, fp);
+		fclose(fp);
+	}
 }

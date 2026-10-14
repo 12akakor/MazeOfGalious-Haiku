@@ -290,3 +290,19 @@ void PCX_IMAGE::draw_sprite(int x1,int y1,int spx,int spy,int x,int y,int sx,int
 
 } /* PCX_IMAGE::draw */ 
 
+
+
+bool pcx_read_palette(const char *file, unsigned char *rgb)
+{
+	FILE *fp=fopen(file,"rb");
+	unsigned char marker;
+
+	if (fp==NULL) return false;
+	if (fseek(fp,-769,SEEK_END)!=0 || fread(&marker,1,1,fp)!=1 || marker!=12 ||
+		fread(rgb,1,768,fp)!=768) {
+		fclose(fp);
+		return false;
+	} /* if */ 
+	fclose(fp);
+	return true;
+} /* pcx_read_palette */ 

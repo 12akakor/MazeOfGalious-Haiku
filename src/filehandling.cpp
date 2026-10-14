@@ -1,4 +1,5 @@
 #include "filehandling.h"
+#include "platform/platform.h"
 
 #ifndef _WIN32
 // make (sub)directories including multiple subdirs
@@ -42,8 +43,9 @@ FILE *f1open(const char *f, const char *m, const enum filetype t) {
       break;
 
     case USERDATA:
-      // userdata is put in $HOME/.GAMENAME/
-      snprintf(fname, STRLEN-1, "%s/.%s/%s", getenv("HOME"), GAMENAME, f);
+      // userdata is put in the platform settings directory
+      // (Linux: $HOME/.GAMENAME/, Haiku: ~/config/settings/MazeOfGalious/)
+      snprintf(fname, STRLEN-1, "%s/%s", plat_settings_dir(), f);
       // create subdirs if they don't exist
       mkdirp(fname, S_IRWXU | S_IRGRP|S_IXGRP | S_IROTH|S_IXOTH);
       // open file
