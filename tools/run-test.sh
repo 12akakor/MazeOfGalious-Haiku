@@ -7,7 +7,7 @@ ROOT=$(dirname "$(readlink -f "$0")")/..
 mkdir -p "$OUT"; OUT=$(readlink -f "$OUT"); rm -f "$OUT"/frame_*
 TMPHOME=$(mktemp -d)
 cd "$ROOT/data"
-HOME=$TMPHOME SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+HOME=$TMPHOME MOG_SETTINGS=$TMPHOME MOG_DATA=$ROOT/data SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
 MOG_TEST_FRAMES=$FRAMES MOG_TEST_DUMPS=$DUMPS MOG_TEST_OUT=$OUT MOG_TEST_SCRIPT=$SCRIPT \
-	"$BIN" > "$OUT/stdout.log" 2>&1
+	"$BIN" --window > "$OUT/stdout.log" 2>&1
 rm -rf "$TMPHOME"
