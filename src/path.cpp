@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 #define NAME_MAX	256
 
@@ -20,6 +21,36 @@ extern char *g_path;
 extern char **s_paths;
 extern int n_s_paths,act_s_path;
 extern char *s_path;
+
+
+static int compare_paths(const void *a, const void *b)
+{
+	return strcasecmp(*(char * const *)a, *(char * const *)b);
+}
+
+
+static void sort_paths(char **paths, int n)
+{
+	if (paths!=NULL && n>1) qsort(paths, n, sizeof(char *), compare_paths);
+}
+
+
+/* Port: index of the set whose directory name is 'name' (e.g. "original"),
+   or -1. */
+int find_path(char **paths, int n, const char *name)
+{
+	int i;
+	char tmp[NAME_MAX];
+	for(i=0;i<n;i++) {
+		const char *p=strchr(paths[i],'/');
+		if (p==NULL) continue;
+		snprintf(tmp,sizeof(tmp),"%s",p+1);
+		size_t l=strlen(tmp);
+		if (l>0 && tmp[l-1]=='/') tmp[l-1]=0;
+		if (strcasecmp(tmp,name)==0) return i;
+	}
+	return -1;
+}
 
 
 #ifdef _WIN32
@@ -241,6 +272,11 @@ void init_paths(void) {
 	    exit(1);
 	  }
   } /* if */ 
+
+  /* Port: readdir() order differs per file system; sort so set order is
+     the same everywhere. */
+  sort_paths(g_paths,n_g_paths);
+  sort_paths(s_paths,n_s_paths);
 
 } /* init_paths */ 
 

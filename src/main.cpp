@@ -22,6 +22,11 @@
 
 extern void DebugReport(void);
 
+#ifdef MOG_TESTHOOKS
+#include "test/testhooks.h"
+extern unsigned char* buffer_screen;
+#endif
+
 int SCREEN_X = 640;
 int SCREEN_Y = 400;
 int COLOUR_DEPTH = 8;
@@ -249,6 +254,23 @@ FIXME: the code below is a big copy/paste; it should be in a separate function i
             }
         }
 		
+#ifdef MOG_TESTHOOKS
+		if (th_active()) {
+			// Deterministic run: exactly one game cycle per iteration.
+			th_apply_input(SDL_GetKeyState(NULL), SDLK_LAST);
+			Render(screen);
+			unsigned char pal[768];
+			SDL_Color* colors = screen->format->palette->colors;
+			for (int c = 0; c < 256; c++) {
+				pal[c * 3] = colors[c].r;
+				pal[c * 3 + 1] = colors[c].g;
+				pal[c * 3 + 2] = colors[c].b;
+			}
+			if (th_end_frame(buffer_screen, SCREEN_X, SCREEN_Y, pal))
+				quit = true;
+			continue;
+		}
+#endif
 		// game main loop
 		act_time = SDL_GetTicks();
         if (!quit && act_time - time >= REDRAWING_PERIOD) {

@@ -1,0 +1,23 @@
+# Linux builds (development and reference only).
+#   make -f Makefile.linux ref        upstream SDL 1.2 code path (+ test hooks)
+CXX ?= g++
+GAME_SRCS = $(wildcard src/*.cpp)
+CXXFLAGS_COMMON = -O2 -g -Wno-write-strings -Isrc
+
+REF_OBJS = $(patsubst src/%.cpp,obj/ref/%.o,$(GAME_SRCS)) obj/ref/test/testhooks.o
+REF_CXXFLAGS = $(CXXFLAGS_COMMON) -DMOG_TESTHOOKS -include src/test/testhooks.h $(shell sdl-config --cflags)
+REF_LIBS = $(shell sdl-config --libs) -lSDL_image -lSDL_mixer -lSDL_sound
+
+ref: mog-ref
+
+mog-ref: $(REF_OBJS)
+	$(CXX) $^ -o $@ $(REF_LIBS)
+
+obj/ref/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(REF_CXXFLAGS) -c $< -o $@
+
+clean:
+	rm -rf obj mog-ref
+
+.PHONY: ref clean
