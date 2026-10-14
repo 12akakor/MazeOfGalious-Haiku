@@ -58,9 +58,11 @@ Noteer per punt OK of het probleem.
 ## 5. Pakket
 
     make package
-    pkgman install ./mazeofgalious-0.63.1-1-x86_64.hpkg
+    pkgman install ./mazeofgalious-0.63.1-2-x86_64.hpkg
 
-Controle: "Maze of Galious" staat in het Deskbar-menu onder Applications en start van daaruit.
+Controle: "Maze of Galious" staat in het Deskbar-menu onder Applications (alleen het programma, geen mappen) en start van daaruit in een venster.
+
+Een melding dat het verversen van de HaikuPorts-repository mislukt is, staat los van een lokale installatie en kan geen kwaad.
 Verwijderen: `pkgman uninstall mazeofgalious`.
 
 ## Bekende aandachtspunten (nog niet getest op echte Haiku)
