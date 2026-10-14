@@ -17,9 +17,15 @@ Op verzoek van Akakor zijn alle Linux/SDL-hulpmiddelen uit de repo gehaald: `pla
 
 Standaardinstellingen lazen `g_paths[4]` en `s_paths[2]` (vaste posities). Met minder sets dan verwacht las het spel buiten de array. Nu op naam gekozen, met `original` als terugval. Setlijsten worden gesorteerd (volgorde van `readdir` verschilt per bestandssysteem).
 
+## Getest op Haiku (2026-10-14, VirtualBox op Windows 10)
+
+- `make`: gelukt, gelinkt met alleen `-lbe -lmedia`, icoon toegevoegd.
+- `make test`: 65 checks, 0 failures; **PASS basic: all 1400 frames identical**. De native Haiku-build geeft dezelfde 1400 beelden en paletten als het originele SDL-spel.
+- Gevonden en opgelost: scripts verloren hun uitvoerrechten bij het uitpakken (nu via `sh`); drie compilerwaarschuwingen uit de upstream-code.
+
 ## Nog te doen
 
-1. Testen in de Haiku-VM volgens `06-testen-op-haiku.md` (`make`, `make test`, checklist, `make package`).
+1. Handmatige checklist in de Haiku-VM (`make run`) en `make package`, volgens `06-testen-op-haiku.md`.
 2. Daarna RenkuOS-VM (zelfde stappen).
 3. Bevindingen terugkoppelen; daarna eventuele fixes.
 
