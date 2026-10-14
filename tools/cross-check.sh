@@ -25,6 +25,14 @@ for f in src/*.cpp src/platform/audio_mixer.cpp src/platform/platform_common.cpp
 		-c "$f" -o "$OUT/$(basename "$f" .cpp).o"
 	n=$((n + 1))
 done
+# Test variant (make test): same sources with the deterministic test hooks.
+for f in src/*.cpp src/platform/audio_mixer.cpp src/platform/platform_common.cpp \
+		src/platform/video_scaler.cpp src/platform/keynames.cpp \
+		src/platform/platform_haiku.cpp src/test/testhooks.cpp; do
+	"$HAIKU_CROSS-g++" -std=gnu++17 -O2 -w -Wno-write-strings -Isrc $(echo $INC | sed 's/-I/-idirafter /g') \
+		-DMOG_TESTHOOKS -include src/test/testhooks.h -c "$f" -o "$OUT/test_$(basename "$f" .cpp).o"
+	n=$((n + 1))
+done
 "$HAIKU_CROSS-gcc" -O2 -w $(echo $INC | sed 's/-I/-idirafter /g') -c src/third_party/stb_vorbis.c -o "$OUT/stb_vorbis.o"
 rm -rf "$OUT"
-echo "OK: $((n + 1)) files compiled for Haiku x86_64"
+echo "OK: $((n + 1)) compilations for Haiku x86_64 (normal and test variant)"

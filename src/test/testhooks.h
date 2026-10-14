@@ -29,8 +29,13 @@ void th_audio_frame(void);
 #endif
 
 #if defined(MOG_TESTHOOKS) && !defined(MOG_TESTHOOKS_IMPL)
-/* Same random sequence on every platform. */
+/* Same random sequence on every platform. The standard headers that use
+   rand() themselves are included first, so the macro does not reach them. */
 #include <stdlib.h>
+#ifdef __cplusplus
+#include <cstdlib>
+#include <algorithm>
+#endif
 #define rand() th_rand()
 #endif
 
