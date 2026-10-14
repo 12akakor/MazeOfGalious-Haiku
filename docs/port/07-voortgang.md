@@ -23,9 +23,11 @@ Standaardinstellingen lazen `g_paths[4]` en `s_paths[2]` (vaste posities). Met m
 - `make test`: 65 checks, 0 failures; **PASS basic: all 1400 frames identical**. De native Haiku-build geeft dezelfde 1400 beelden en paletten als het originele SDL-spel.
 - Gevonden en opgelost: scripts verloren hun uitvoerrechten bij het uitpakken (nu via `sh`); drie compilerwaarschuwingen uit de upstream-code.
 
+- Handmatige checklist (`make run`): alle punten OK. Het titelscherm heeft geen muziek; dat is ook zo in de upstream-code (muziek start pas na spatie), dus geen fout van de port.
+
 ## Nog te doen
 
-1. Handmatige checklist in de Haiku-VM (`make run`) en `make package`, volgens `06-testen-op-haiku.md`.
+1. `make package` en installatie testen in de Haiku-VM.
 2. Daarna RenkuOS-VM (zelfde stappen).
 3. Bevindingen terugkoppelen; daarna eventuele fixes.
 

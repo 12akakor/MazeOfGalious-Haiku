@@ -38,9 +38,9 @@ Start: `make run` (venster) of dubbelklik op `MazeOfGalious` in Tracker.
 
 | # | Controle | Verwacht |
 |---|---|---|
-| 1 | Opstarten | Konami-logo, daarna titelscherm met muziek |
+| 1 | Opstarten | Konami-logo, daarna titelscherm (zonder muziek, zoals in de originele remake) |
 | 2 | Venster | 1280x800 (of kleiner bij klein scherm), scherp beeld |
-| 3 | Spatie | Spel start, kasteelmuziek |
+| 3 | Spatie | Startdeuntje, spel start, kasteelmuziek |
 | 4 | Cursortoetsen, spatie | Lopen, springen, zwaard met geluid |
 | 5 | Ladder op/af | Werkt, kamerwissel werkt |
 | 6 | F1 / F2 | Itemscherm / pauze |
