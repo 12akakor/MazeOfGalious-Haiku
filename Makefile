@@ -4,7 +4,7 @@
 #   make run        builds and starts the game (windowed)
 #   make test       builds a test binary and compares 1400 frames with the
 #                   golden reference (tests/golden), plus unit tests
-#   make package    builds mazeofgalious-0.63.1-2-x86_64.hpkg
+#   make package    builds mazeofgalious-0.63.2-1-x86_64.hpkg (and the extras package)
 
 NAME     = MazeOfGalious
 CXX     ?= g++

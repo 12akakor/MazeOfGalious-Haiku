@@ -25,16 +25,23 @@ Standaardinstellingen lazen `g_paths[4]` en `s_paths[2]` (vaste posities). Met m
 
 - Handmatige checklist (`make run`): alle punten OK. Het titelscherm heeft geen muziek; dat is ook zo in de upstream-code (muziek start pas na spatie), dus geen fout van de port.
 
-- Pakket 0.63.1-1 installeerde, maar de Deskbar toonde naast het programma ook de datamappen, en starten via de Deskbar gaf volledig scherm (upstream-standaard). Opgelost in 0.63.1-2: Haiku-indeling (`apps/MazeOfGalious`, `data/MazeOfGalious/`, `documentation/packages/mazeofgalious/`) en standaard een venster. Indeling gecontroleerd met de Haiku `package`-tool.
+- Pakket 0.63.1-1 installeerde, maar de Deskbar toonde naast het programma ook de datamappen; starten via de Deskbar gaf volledig scherm (upstream-standaard). Opgelost in 0.63.1-2: Haiku-indeling (`apps/MazeOfGalious`, `data/MazeOfGalious/`, `documentation/packages/mazeofgalious/`) en standaard een venster. Indeling gecontroleerd met de Haiku `package`-tool.
+
+## Versie 2 (0.63.2, 2026-10-14)
+
+- **xBR-lv2** als CPU-filter (C++-port van Hyllian's shader, MIT), daarna resamplen naar venster of scherm met behoud van 16:10. Ook **sharp bilinear** en **nearest**. Wisselen met **F3**; keuze in `port.cfg`; actief filter in de titelbalk.
+- Per grafische set automatisch bepaald of de kunst 320x200 met verdubbelde pixels is (`original`: ja; alle andere sets: nee). xBR werkt dan op 320x200.
+- Controle: uitvoer vergeleken met de originele GLSL-shader in WebGL (headless Chromium). MoG-scènes: 95,3 tot 98,2% van de pixels identiek, 99,92 tot 99,99% identiek of 1 stap verschil; testpatroon volledig identiek (hash in unit tests).
+- Snelheid (2 cores, Linux, ter indicatie): xbr volledig scherm 1920x1080 ongeveer 20 tot 22 ms per frame, venster 1280x800 ongeveer 5 ms (budget 40 ms bij 25 fps).
+- **Extra sets** als apart pakket `mazeofgalious_extras` (graphics naramura, hinox, boltian, alternate, alfonso; geluid Bart, Rob, wolf). packagefs voegt de mappen samen met die van het hoofdpakket. Alle vijf grafische sets geladen en getekend in een testrun.
+- Unit tests: 97 checks.
 
 ## Nog te doen
 
-1. Pakket 0.63.1-2 testen in de Haiku-VM (Deskbar, venster, Alt+Enter).
+1. Versie 2 testen in de Haiku-VM: `make test`, checklist punt 15 tot en met 22 in `06-testen-op-haiku.md`.
 2. Daarna RenkuOS-VM (zelfde stappen).
 3. Bevindingen terugkoppelen; daarna eventuele fixes.
 
 ## Bekende beperkingen versie 1
 
-- Volledig scherm schaalt alleen met een geheel getal. Bij 1024x768 blijft het beeld 640x400 met zwarte randen. xBR (versie 2) lost dit op.
-- Grafische sets: alleen `original` in de repo.
-- Extra sets in een gebruikersmap (naast de pakketmap) zijn nog niet geïmplementeerd.
+- Eigen sets toevoegen kan via een eigen pakket of door ze in `data/` naast het programma te zetten (ontwikkelmap); een aparte gebruikersmap is er niet.

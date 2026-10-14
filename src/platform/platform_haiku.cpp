@@ -90,8 +90,8 @@ int sHeight = 0;
 bool sFullscreen = false;
 bool sCursorHidden = false;
 BRect sWindowedFrame;
+char sTitle[128] = "";
 uint32* sConverted = NULL;
-Scaler* sScaler = NULL;
 
 /* Front bitmap is drawn by the window thread, back bitmap is written by the
    game thread. sFrameLock protects the swap and the drawing. */
@@ -387,10 +387,11 @@ plat_init(int width, int height, bool fullscreen, const char* title)
 	sHeight = height;
 	sConverted = new uint32[(size_t)width * height];
 	memset(sConverted, 0, sizeof(uint32) * (size_t)width * height);
-	sScaler = scaler_for_name("nearest");
 
+	snprintf(sTitle, sizeof(sTitle), "%s", title);
 	sWindowedFrame = windowed_frame();
 	sWindow = new MoGWindow(sWindowedFrame, title);
+	plat_backend_scaler_changed();
 	sWindow->SetSizeLimits(width / 2, 32768, height / 2, 32768);
 	sWindow->Show();
 
@@ -457,7 +458,8 @@ plat_present(const uint8_t* pixels)
 		}
 	}
 
-	sScaler->Process(sConverted, sWidth, sHeight, 1, (uint32_t*)sBack->Bits(),
+	plat_internal_scaler()->Process(sConverted, sWidth, sHeight,
+		plat_internal_source_factor(), (uint32_t*)sBack->Bits(),
 		width, height, (int)(sBack->BytesPerRow() / 4));
 
 	sFrameLock.Lock();
@@ -505,6 +507,18 @@ plat_set_fullscreen(bool fullscreen)
 	sFullscreen = fullscreen;
 	sWindow->Unlock();
 	return sFullscreen;
+}
+
+
+void
+plat_backend_scaler_changed(void)
+{
+	if (sWindow == NULL || !sWindow->Lock())
+		return;
+	char title[160];
+	snprintf(title, sizeof(title), "%s [%s]", sTitle, plat_scaler_name());
+	sWindow->SetTitle(title);
+	sWindow->Unlock();
 }
 
 

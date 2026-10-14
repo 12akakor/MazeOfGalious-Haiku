@@ -52,6 +52,10 @@ Indruk:
 - HQx: lijkt op xBR, iets rommeliger randen.
 - CRT: sfeer, maar donkerder; de eenvoudige versie in de vergelijking is een benadering, echte CRT-shaders zijn beter.
 
+## Status
+
+Geïmplementeerd in versie 2 (0.63.2), zie `07-voortgang.md`. Afwijking van het plan: na xBR wordt bilineair geresampled (niet sharp bilinear), omdat xBR al op bijna de eindgrootte uitkomt; bronfactor wordt automatisch per set bepaald.
+
 ## Besluit (2026-10-14)
 
 Akakor kiest **xBR** als filter voor versie 2.

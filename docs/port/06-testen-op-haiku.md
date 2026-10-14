@@ -55,10 +55,24 @@ Start: `make run` (venster) of dubbelklik op `MazeOfGalious` in Tracker.
 
 Noteer per punt OK of het probleem.
 
+## 4b. Versie 2: beeldfilters en extra sets
+
+| # | Controle | Verwacht |
+|---|---|---|
+| 15 | Titelbalk | Toont het filter, bijvoorbeeld `Maze of Galious v0.63 [xbr]` |
+| 16 | F3 (meerdere keren) | Wisselt xbr, nearest, sharp; beeld verandert, keuze blijft bewaard na herstart |
+| 17 | xbr, set original | Gladde contouren, geen blokjes |
+| 18 | Venster groter maken | Beeld schaalt mee (16:10), zwarte randen alleen waar nodig |
+| 19 | Alt+Enter met xbr | Volledig scherm vult de hoogte; spel blijft vloeiend (25 fps) |
+| 20 | Met extras-pakket: F10 | Wisselt door original, naramura, hinox, boltian, alternate, alfonso |
+| 21 | Met extras-pakket: F11 | Wisselt door alternate, Bart, jorito, original, Rob, wolf |
+| 22 | CPU in ProcessController | Bij xbr volledig scherm: noteer het percentage |
+
 ## 5. Pakket
 
     make package
-    pkgman install ./mazeofgalious-0.63.1-2-x86_64.hpkg
+    pkgman install ./mazeofgalious-0.63.2-1-x86_64.hpkg
+    pkgman install ./mazeofgalious_extras-0.63.2-1-any.hpkg   (optioneel, extra sets)
 
 Controle: "Maze of Galious" staat in het Deskbar-menu onder Applications (alleen het programma, geen mappen) en start van daaruit in een venster.
 

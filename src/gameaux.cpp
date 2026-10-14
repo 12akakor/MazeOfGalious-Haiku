@@ -3050,6 +3050,15 @@ void get_palette(void)
 			plat_set_palette(rgb);
 		} /* if */ 
 	} /* if */ 
+
+	/* Port: tell the scaler whether this set is doubled 320x200 art. */
+	sprintf(tmp,"%stiles.pcx",g_path);
+	{
+		FILE *test=fopen(tmp,"rb");
+		if (test!=NULL) fclose(test);
+				   else sprintf(tmp,"%stiles.pcx",default_g_path);
+	}
+	plat_set_source_factor(pcx_source_factor(tmp));
 } /* get_palette */ 
 
 

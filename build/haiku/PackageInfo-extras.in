@@ -1,0 +1,24 @@
+name			mazeofgalious_extras
+version			@VERSION@
+architecture	any
+summary			"Extra graphic and sound sets for Maze of Galious"
+description		"Graphic sets naramura, hinox, boltian, alternate and alfonso, sound sets Bart, Rob and wolf, made by the Brain Games remake community. Switch sets in the game with F10 (graphics) and F11 (sound)."
+
+packager		"Akakor"
+vendor			"Brain Games"
+copyrights		{
+	"2002-2009 Brain Games and contributors"
+}
+licenses		{
+	"GNU GPL v2"
+}
+urls			{
+	"https://mog.jorito.net/"
+}
+
+provides		{
+	mazeofgalious_extras = @VERSION@
+}
+requires		{
+	mazeofgalious
+}
