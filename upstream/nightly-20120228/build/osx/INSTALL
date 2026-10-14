@@ -1,0 +1,10 @@
+These are instructions to create a distributable Universal Binary of Maze of Galious for OSX. These instructions are for Xcode, Apple's IDE to GCC et al. The idea is to create a disk image (.dmg file) that contains all needed frameworks and other resources, such as graphics, maps and sound.
+
+To make all this easier, I have created an Xcode project file. It's included in the project directory used for OSX, called 'Maze of Galious'. Usage should be self-explanatory. Just load it into Xcode and hit the 'Build' button. Be sure you have the SDL framework, the SDL_image framework, the SDL_sound framework and the SDL_mixer framework installed. You can get these from http://www.libsdl.org. The project assumes they are located in /Library/Frameworks.
+
+After you've build the project, the resulting 'Maze of Galious.app' file will be located in 'Maze of Galious/build/Release/'.
+To create a .dmg file to distribute the application, you can run the shell script 'createdmg.sh' from the commandline. The script expects an extra argument, so in order to do a 0.7 release, you'd do:
+
+  tommie:~/Development/mog/trunk/build/osx jorrith$ ./createdmg.sh 0.7
+	
+This will create a .dmg file of the freshly compiled application and will place it into 'build/osx'. 
