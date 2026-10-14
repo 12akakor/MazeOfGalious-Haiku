@@ -1,0 +1,96 @@
+# Project: Maze of Galious
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = Maze_of_Galious_private.res
+OBJ  = ../../sources/bitmaps.o ../../sources/debug-report.o ../../sources/demons.o ../../sources/drawing.o ../../sources/filehandling.o ../../sources/gameaux.o ../../sources/gamecycle.o ../../sources/gameinteractions.o ../../sources/gameobjects.o ../../sources/gametiles.o ../../sources/ingamecycle.o ../../sources/keyboard.o ../../sources/line_clip.o ../../sources/loadpcx.o ../../sources/main.o ../../sources/passwords.o ../../sources/path.o ../../sources/render.o ../../sources/roomchange.o ../../sources/shrines.o ../../sources/sound.o ../../sources/debug.o $(RES)
+LINKOBJ  = ../../sources/bitmaps.o ../../sources/debug-report.o ../../sources/demons.o ../../sources/drawing.o ../../sources/filehandling.o ../../sources/gameaux.o ../../sources/gamecycle.o ../../sources/gameinteractions.o ../../sources/gameobjects.o ../../sources/gametiles.o ../../sources/ingamecycle.o ../../sources/keyboard.o ../../sources/line_clip.o ../../sources/loadpcx.o ../../sources/main.o ../../sources/passwords.o ../../sources/path.o ../../sources/render.o ../../sources/roomchange.o ../../sources/shrines.o ../../sources/sound.o ../../sources/debug.o $(RES)
+LIBS =  -L"C:/Dev-Cpp/lib" -L"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL-1.2.13/lib" -L"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_image-1.2.6/lib" -L"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_mixer-1.2.8/lib" -L"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_sound/lib" -mwindows ../../../Development/SDL-1.2.13/lib/SDL.lib ../../../Development/SDL_image-1.2.6/lib/SDL_image.lib ../../../Development/SDL_mixer-1.2.8/lib/SDL_mixer.lib ../../../Development/SDL_sound/lib/sdl_sound.lib  -s -march=i586 -mmmx 
+INCS =  -I"C:/Dev-Cpp/include"  -I"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL-1.2.13/include"  -I"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_image-1.2.6/include"  -I"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_sound/include"  -I"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_mixer-1.2.8/include" 
+CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL-1.2.13/include"  -I"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_image-1.2.6/include"  -I"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_sound/include"  -I"C:/Documents and Settings/Eigenaar/Mijn documenten/Development/SDL_mixer-1.2.8/include" 
+BIN  = "../../Maze of Galious.exe"
+CXXFLAGS = $(CXXINCS)   -fexpensive-optimizations -O1 -march=i586 -mmmx
+CFLAGS = $(INCS)   -fexpensive-optimizations -O1 -march=i586 -mmmx
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before "../../Maze of Galious.exe" all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o "..\..\Maze of Galious.exe" $(LIBS)
+
+../../sources/bitmaps.o: ../../sources/bitmaps.cpp
+	$(CPP) -c ../../sources/bitmaps.cpp -o ../../sources/bitmaps.o $(CXXFLAGS)
+
+../../sources/debug-report.o: ../../sources/debug-report.cpp
+	$(CPP) -c ../../sources/debug-report.cpp -o ../../sources/debug-report.o $(CXXFLAGS)
+
+../../sources/demons.o: ../../sources/demons.cpp
+	$(CPP) -c ../../sources/demons.cpp -o ../../sources/demons.o $(CXXFLAGS)
+
+../../sources/drawing.o: ../../sources/drawing.cpp
+	$(CPP) -c ../../sources/drawing.cpp -o ../../sources/drawing.o $(CXXFLAGS)
+
+../../sources/filehandling.o: ../../sources/filehandling.cpp
+	$(CPP) -c ../../sources/filehandling.cpp -o ../../sources/filehandling.o $(CXXFLAGS)
+
+../../sources/gameaux.o: ../../sources/gameaux.cpp
+	$(CPP) -c ../../sources/gameaux.cpp -o ../../sources/gameaux.o $(CXXFLAGS)
+
+../../sources/gamecycle.o: ../../sources/gamecycle.cpp
+	$(CPP) -c ../../sources/gamecycle.cpp -o ../../sources/gamecycle.o $(CXXFLAGS)
+
+../../sources/gameinteractions.o: ../../sources/gameinteractions.cpp
+	$(CPP) -c ../../sources/gameinteractions.cpp -o ../../sources/gameinteractions.o $(CXXFLAGS)
+
+../../sources/gameobjects.o: ../../sources/gameobjects.cpp
+	$(CPP) -c ../../sources/gameobjects.cpp -o ../../sources/gameobjects.o $(CXXFLAGS)
+
+../../sources/gametiles.o: ../../sources/gametiles.cpp
+	$(CPP) -c ../../sources/gametiles.cpp -o ../../sources/gametiles.o $(CXXFLAGS)
+
+../../sources/ingamecycle.o: ../../sources/ingamecycle.cpp
+	$(CPP) -c ../../sources/ingamecycle.cpp -o ../../sources/ingamecycle.o $(CXXFLAGS)
+
+../../sources/keyboard.o: ../../sources/keyboard.cpp
+	$(CPP) -c ../../sources/keyboard.cpp -o ../../sources/keyboard.o $(CXXFLAGS)
+
+../../sources/line_clip.o: ../../sources/line_clip.cpp
+	$(CPP) -c ../../sources/line_clip.cpp -o ../../sources/line_clip.o $(CXXFLAGS)
+
+../../sources/loadpcx.o: ../../sources/loadpcx.cpp
+	$(CPP) -c ../../sources/loadpcx.cpp -o ../../sources/loadpcx.o $(CXXFLAGS)
+
+../../sources/main.o: ../../sources/main.cpp
+	$(CPP) -c ../../sources/main.cpp -o ../../sources/main.o $(CXXFLAGS)
+
+../../sources/passwords.o: ../../sources/passwords.cpp
+	$(CPP) -c ../../sources/passwords.cpp -o ../../sources/passwords.o $(CXXFLAGS)
+
+../../sources/path.o: ../../sources/path.cpp
+	$(CPP) -c ../../sources/path.cpp -o ../../sources/path.o $(CXXFLAGS)
+
+../../sources/render.o: ../../sources/render.cpp
+	$(CPP) -c ../../sources/render.cpp -o ../../sources/render.o $(CXXFLAGS)
+
+../../sources/roomchange.o: ../../sources/roomchange.cpp
+	$(CPP) -c ../../sources/roomchange.cpp -o ../../sources/roomchange.o $(CXXFLAGS)
+
+../../sources/shrines.o: ../../sources/shrines.cpp
+	$(CPP) -c ../../sources/shrines.cpp -o ../../sources/shrines.o $(CXXFLAGS)
+
+../../sources/sound.o: ../../sources/sound.cpp
+	$(CPP) -c ../../sources/sound.cpp -o ../../sources/sound.o $(CXXFLAGS)
+
+../../sources/debug.o: ../../sources/debug.cpp
+	$(CPP) -c ../../sources/debug.cpp -o ../../sources/debug.o $(CXXFLAGS)
+
+Maze_of_Galious_private.res: Maze_of_Galious_private.rc 
+	$(WINDRES) -i Maze_of_Galious_private.rc --input-format=rc -o Maze_of_Galious_private.res -O coff 

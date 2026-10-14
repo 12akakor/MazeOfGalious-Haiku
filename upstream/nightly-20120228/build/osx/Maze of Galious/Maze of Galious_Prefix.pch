@@ -1,0 +1,9 @@
+//
+// Prefix header for all source files of the 'Maze of Galious' target in the 'Maze of Galious' project
+//
+
+#include "SDL.h"
+
+#ifdef __OBJC__
+    #import <Cocoa/Cocoa.h>
+#endif
