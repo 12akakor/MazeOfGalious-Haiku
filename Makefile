@@ -1,12 +1,10 @@
 # Native build for Haiku / RenkuOS (x86_64). Run on Haiku/RenkuOS itself:
 #
-#   make            builds ./MazeOfGalious (Be API only, no SDL)
+#   make            builds ./MazeOfGalious (Be API only)
 #   make run        builds and starts the game (windowed)
 #   make test       builds a test binary and compares 1400 frames with the
 #                   golden reference (tests/golden), plus unit tests
 #   make package    builds mazeofgalious-0.63.1-1-x86_64.hpkg
-#
-# Linux development builds are in Makefile.linux.
 
 NAME     = MazeOfGalious
 CXX     ?= g++

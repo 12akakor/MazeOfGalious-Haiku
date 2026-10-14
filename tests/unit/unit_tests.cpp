@@ -1,6 +1,6 @@
 /*
- * Unit tests for the portable platform code. No SDL, no Be API.
- * Build and run: make -f Makefile.linux unit   (from the repository root)
+ * Unit tests for the portable platform code (no Be API needed).
+ * Built and run by "make test".
  */
 #include <math.h>
 #include <stdio.h>

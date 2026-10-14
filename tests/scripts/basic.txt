@@ -1,4 +1,4 @@
-# Basic regression run (keys = SDL 1.2 numbers: 32 space, 273 up, 274 down, 275 right, 276 left, 282 F1)
+# Basic regression run (MOGK key numbers: 32 space, 273 up, 274 down, 275 right, 276 left, 282 F1)
 # title -> start game
 310 32 1
 312 32 0

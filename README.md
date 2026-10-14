@@ -2,7 +2,7 @@
 
 Native port of the Brain Games remake of *Knightmare II: The Maze of Galious*
 (Konami, MSX, 1987) to Haiku and RenkuOS. The game uses only the Be API
-(`libbe`, `libmedia`); SDL is not needed.
+(`libbe`, `libmedia`).
 
 Based on the upstream nightly `mog-svn-20120228` (game code identical to
 0.63.1548). Upstream: https://mog.jorito.net/
@@ -30,7 +30,7 @@ Settings (`MoG.cfg`) are stored in `~/config/settings/MazeOfGalious/`.
 
     src/                game code (upstream, minimal changes marked "Port:")
     src/platform/       platform layer: platform.h, portable mixer and decoders,
-                        scaler, Haiku back end, SDL back end (Linux development)
+                        scaler, Haiku back end
     src/third_party/    stb_vorbis (public domain / MIT)
     src/test/           deterministic test hooks (only with -DMOG_TESTHOOKS)
     data/               graphics, sound, rooms

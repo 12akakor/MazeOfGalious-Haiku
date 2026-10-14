@@ -1,7 +1,7 @@
 /* Deterministic test hooks (compiled only with -DMOG_TESTHOOKS).
  *
  * Runtime control via environment variables:
- *   MOG_TEST_SCRIPT  input script: lines "<frame> <keycode> <0|1>" (keycode = SDL 1.2 / MOGK number)
+ *   MOG_TEST_SCRIPT  input script: lines "<frame> <keycode> <0|1>" (keycode = MOGK number)
  *   MOG_TEST_DUMPS   comma separated frame numbers to dump, e.g. "50,200,600"
  *   MOG_TEST_OUT     directory for dumps (frame_NNNNN.raw = 640x400 index bytes, .pal = 768 bytes RGB)
  *   MOG_TEST_FRAMES  number of frames to run before exiting
