@@ -1,0 +1,30 @@
+# Basic regression run (keys = SDL 1.2 numbers: 32 space, 273 up, 274 down, 275 right, 276 left, 282 F1)
+# title -> start game
+310 32 1
+312 32 0
+# walk left, then right
+420 276 1
+470 276 0
+480 275 1
+600 275 0
+# jump + attack
+620 273 1
+630 273 0
+640 32 1
+642 32 0
+660 32 1
+662 32 0
+# walk left a long way (room change)
+680 276 1
+900 276 0
+# climb up ladder attempt
+910 273 1
+990 273 0
+# item screen open/close
+1000 282 1
+1002 282 0
+1040 282 1
+1042 282 0
+# walk right far
+1060 275 1
+1300 275 0

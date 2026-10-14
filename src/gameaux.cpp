@@ -2615,6 +2615,8 @@ bool cargar_configuracion(char *filename)
 } /* guardar_configuraciÛn */ 
 
 
+int find_path(char **paths, int n, const char *name);
+
 void configuracion_por_defecto(void)
 {
 	UP_KEY=SDLK_UP;
@@ -2627,12 +2629,19 @@ void configuracion_por_defecto(void)
 	PAUSE_KEY=SDLK_F2;
 
 	// default gfx set: naramura
-	act_g_path=0;
-	g_path=g_paths[4];
+	// Port: upstream used fixed indices (g_paths[4], s_paths[2]), which read
+	// past the array when fewer sets are installed. Look the sets up by name
+	// and fall back to "original", then to the first set.
+	act_g_path=find_path(g_paths,n_g_paths,"naramura");
+	if (act_g_path<0) act_g_path=find_path(g_paths,n_g_paths,"original");
+	if (act_g_path<0) act_g_path=0;
+	g_path=g_paths[act_g_path];
 
 	// default sound set: jorito
-	act_s_path=0;
-	s_path=s_paths[2];
+	act_s_path=find_path(s_paths,n_s_paths,"jorito");
+	if (act_s_path<0) act_s_path=find_path(s_paths,n_s_paths,"original");
+	if (act_s_path<0) act_s_path=0;
+	s_path=s_paths[act_s_path];
 
 } /* condiguracion_por_defecto */ 
 
