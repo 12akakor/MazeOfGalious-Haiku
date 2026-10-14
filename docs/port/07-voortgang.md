@@ -9,6 +9,10 @@
 | 3 Platformlaag | Geen SDL meer in de spelcode. Eigen mixer, WAV- en Ogg-decoder (stb_vorbis), PCX-palet, MOGK-toetscodes (SDL 1.2-waarden), `Scaler` met `NearestScaler` | Linux: 1400/1400 frames en paletten identiek aan de referentie; 65 unit tests; geluid bit-identiek aan SDL_mixer voor alle 44,1 kHz-bestanden |
 | 4 Native backend | `platform_haiku.cpp`: BWindow/BView/BBitmap, get_key_info, BSoundPlayer, find_directory, volledig scherm; Makefile, rdef, eigen vectoricoon, hpkg-script | Compileert voor Haiku x86_64 (GCC 13.3.0, RenkuOS-headers 13-10). Nog niet gelinkt of gestart |
 
+## Opgeruimd (2026-10-14)
+
+Op verzoek van Akakor zijn alle Linux/SDL-hulpmiddelen uit de repo gehaald: `platform_sdl.cpp`, `Makefile.linux`, `build/linux/`, `tests/unit/audio_compare.cpp` en `tools/build-reference.sh`. De repo bevat nu alleen de native Haiku/RenkuOS-build. De vergelijkingstest met 1400 frames draait native met `make test`; de golden hashes staan vast in `tests/golden`. De SDL-referentie blijft terug te halen via git tag `reference-sdl`.
+
 ## Upstream-bug gerepareerd
 
 Standaardinstellingen lazen `g_paths[4]` en `s_paths[2]` (vaste posities). Met minder sets dan verwacht las het spel buiten de array. Nu op naam gekozen, met `original` als terugval. Setlijsten worden gesorteerd (volgorde van `readdir` verschilt per bestandssysteem).

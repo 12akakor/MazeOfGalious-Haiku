@@ -1,9 +1,8 @@
 /*
  * Platform layer for the Maze of Galious remake.
  *
- * The game code only talks to this interface. There are two back ends:
- *   platform_sdl.cpp    Linux development build (SDL 1.2, video/input/audio out only)
- *   platform_haiku.cpp  native Haiku / RenkuOS build (Be API, no SDL)
+ * The game code only talks to this interface. Back end:
+ *   platform_haiku.cpp  native Haiku / RenkuOS build (Be API)
  *
  * The back end owns main(). It initialises itself and then calls game_main()
  * on the thread that runs the game.
@@ -82,7 +81,7 @@ int plat_modifiers(void);
    deterministic test driver, which writes the key state itself). */
 void plat_set_input_override(bool enabled);
 
-/* Same strings as SDL 1.2 SDL_GetKeyName(). */
+/* Same key names as the original game used (SDL 1.2 names). */
 const char* plat_key_name(MOGKey key);
 
 

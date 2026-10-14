@@ -1,9 +1,6 @@
 obj/
-mog-ref
-mog-linux
 mog
 *.o
-mog-linux-test
 MazeOfGalious
 MazeOfGalious-test
 *.hpkg

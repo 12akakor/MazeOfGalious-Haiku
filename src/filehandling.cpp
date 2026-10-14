@@ -44,7 +44,7 @@ FILE *f1open(const char *f, const char *m, const enum filetype t) {
 
     case USERDATA:
       // userdata is put in the platform settings directory
-      // (Linux: $HOME/.GAMENAME/, Haiku: ~/config/settings/MazeOfGalious/)
+      // (Haiku: ~/config/settings/MazeOfGalious/)
       snprintf(fname, STRLEN-1, "%s/%s", plat_settings_dir(), f);
       // create subdirs if they don't exist
       mkdirp(fname, S_IRWXU | S_IRGRP|S_IXGRP | S_IROTH|S_IXOTH);
