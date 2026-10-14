@@ -9,7 +9,7 @@
 set -e
 ROOT=$(dirname "$(readlink -f "$0")")/..
 cd "$ROOT"
-VERSION=0.63.1-2
+VERSION=0.63.2-1
 PKG=obj/pkg
 PACKAGE=${PKGTOOL:-package}
 rm -rf "$PKG"
@@ -28,3 +28,14 @@ rm -f mazeofgalious-*-x86_64.hpkg
 "$PACKAGE" create -C "$PKG" "mazeofgalious-$VERSION-x86_64.hpkg"
 echo "created mazeofgalious-$VERSION-x86_64.hpkg"
 echo "install with: pkgman install ./mazeofgalious-$VERSION-x86_64.hpkg"
+
+# Extra graphic and sound sets: a separate package. packagefs merges its
+# data/MazeOfGalious/ with the one of the main package.
+EXTRAS=obj/pkg-extras
+rm -rf "$EXTRAS"
+mkdir -p "$EXTRAS/data/MazeOfGalious"
+cp -r data-extras/graphics data-extras/sound "$EXTRAS/data/MazeOfGalious/"
+sed "s/@VERSION@/$VERSION/g" build/haiku/PackageInfo-extras.in > "$EXTRAS/.PackageInfo"
+rm -f mazeofgalious_extras-*-any.hpkg
+"$PACKAGE" create -C "$EXTRAS" "mazeofgalious_extras-$VERSION-any.hpkg"
+echo "created mazeofgalious_extras-$VERSION-any.hpkg (optional extra sets)"

@@ -11,6 +11,7 @@
 #include "mog.h"
 
 #include "debug.h"
+#include "port_settings.h"
 
 extern void DebugReport(void);
 
@@ -113,6 +114,12 @@ int game_main(int argc, char** argv)
 				fullscreen = plat_set_fullscreen(!fullscreen);
 			}
 
+			// Port: F3 cycles the scaling filter (xbr, nearest, sharp)
+			if (event.key == MOGK_F3) {
+				plat_next_scaler();
+				port_settings_save();
+			}
+
 			// Change graphic set with either F10 or 9
 			if (event.key == MOGK_F10 || event.key == MOGK_9) {
 
@@ -206,6 +213,8 @@ static bool initialize_platform(void)
 		output_debug_message("Couldn't open a %ix%i window\n", SCREEN_X, SCREEN_Y);
 		return false;
 	}
+
+	port_settings_load();
 
 	Sound_initialization();
 

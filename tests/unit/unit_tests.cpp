@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "../../src/platform/audio_mixer.h"
 #include "../../src/platform/platform.h"
@@ -294,6 +295,117 @@ test_palette_and_scaler(void)
 }
 
 
+static uint64_t
+fnv(const uint32_t* data, size_t count)
+{
+	uint64_t h = 1469598103934665603ULL;
+	for (size_t i = 0; i < count; i++)
+		h = (h ^ data[i]) * 1099511628211ULL;
+	return h;
+}
+
+
+static void
+test_xbr(void)
+{
+	/* Pattern checked against the original GLSL shader (WebGL, see
+	   tests/xbr/): identical output at factor 3. */
+	const int w = 24, h = 24;
+	static uint32_t img[w * h];
+	for (int y = 0; y < h; y++) {
+		for (int x = 0; x < w; x++) {
+			uint32_t c = 0xff202040;
+			if (x + y < 20 && x > y / 2)
+				c = 0xffe0c040;
+			if ((x - 16) * (x - 16) + (y - 14) * (y - 14) < 30)
+				c = 0xff40c0e0;
+			if (x == 3 && y > 4 && y < 20)
+				c = 0xffffffff;
+			img[y * w + x] = c;
+		}
+	}
+	static uint32_t out[w * 3 * h * 3];
+	XbrScaler::Scale(img, w, h, 3, out);
+	CHECK(fnv(out, w * 3 * h * 3) == 0xf1ebc94a7cb4d3b5ULL);
+
+	/* A flat image stays flat; factor 1 is a copy. */
+	static uint32_t flat[8 * 8], flatOut[8 * 4 * 8 * 4];
+	for (int i = 0; i < 64; i++)
+		flat[i] = 0xff336699;
+	XbrScaler::Scale(flat, 8, 8, 4, flatOut);
+	bool same = true;
+	for (int i = 0; i < 8 * 4 * 8 * 4; i++)
+		same = same && flatOut[i] == 0xff336699;
+	CHECK(same);
+	XbrScaler::Scale(img, w, h, 1, out);
+	CHECK(memcmp(img, out, sizeof(img)) == 0);
+
+	/* Whole filters: borders black, picture centred, aspect kept. */
+	static uint32_t frame[640 * 400];
+	for (int i = 0; i < 640 * 400; i++)
+		frame[i] = 0xff808080;
+	static uint32_t screen[1920 * 1080];
+	int x, y, rw, rh;
+	scaler_fit(640, 400, 1920, 1080, &x, &y, &rw, &rh);
+	CHECK(rw == 1728 && rh == 1080 && x == 96 && y == 0);
+	const char* names[] = { "xbr", "sharp" };
+	for (int n = 0; n < 2; n++) {
+		for (int factor = 1; factor <= 2; factor++) {
+			memset(screen, 0x55, sizeof(screen));
+			scaler_for_name(names[n])->Process(frame, 640, 400, factor, screen,
+				1920, 1080, 1920);
+			CHECK(screen[0] == 0 && screen[1919] == 0);
+			CHECK(screen[540 * 1920 + 960] == 0xff808080);
+			CHECK(screen[540 * 1920 + 96] == 0xff808080);
+			CHECK(screen[540 * 1920 + 95] == 0);
+		}
+	}
+	CHECK(strcmp(scaler_for_name("unknown")->Name(), "xbr") == 0);
+	CHECK(strcmp(scaler_next(scaler_for_name("xbr"))->Name(), "nearest") == 0);
+	CHECK(strcmp(scaler_next(scaler_for_name("nearest"))->Name(), "sharp") == 0);
+	CHECK(strcmp(scaler_next(scaler_for_name("sharp"))->Name(), "xbr") == 0);
+}
+
+
+static void
+test_source_factor(void)
+{
+	char path[512];
+	snprintf(path, sizeof(path), "%s/graphics/original/tiles.pcx", sData);
+	CHECK(pcx_source_factor(path) == 2);
+	CHECK(pcx_source_factor("/tmp/does-not-exist.pcx") == 1);
+
+	/* A 4x2 PCX without doubled pixels. */
+	unsigned char header[128];
+	memset(header, 0, sizeof(header));
+	header[0] = 10; header[1] = 5; header[2] = 1; header[3] = 8;
+	header[8] = 3; header[10] = 1;	/* xmax 3, ymax 1 */
+	header[65] = 1; header[66] = 4;	/* planes, bytes per line */
+	unsigned char data[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+	FILE* fp = fopen("/tmp/mog_t5.pcx", "wb");
+	fwrite(header, 1, 128, fp);
+	fwrite(data, 1, 8, fp);
+	fclose(fp);
+	CHECK(pcx_source_factor("/tmp/mog_t5.pcx") == 1);
+	/* Same size, doubled: 1 1 2 2 / 1 1 2 2 (RLE runs of 2). */
+	unsigned char doubled[8] = { 0xC2, 1, 0xC2, 2, 0xC2, 1, 0xC2, 2 };
+	fp = fopen("/tmp/mog_t5.pcx", "wb");
+	fwrite(header, 1, 128, fp);
+	fwrite(doubled, 1, 8, fp);
+	fclose(fp);
+	CHECK(pcx_source_factor("/tmp/mog_t5.pcx") == 2);
+
+	plat_set_source_factor(2);
+	CHECK(plat_internal_source_factor() == 2);
+	plat_set_source_factor(7);
+	CHECK(plat_internal_source_factor() == 1);
+	plat_set_scaler("sharp");
+	CHECK(strcmp(plat_scaler_name(), "sharp") == 0);
+	plat_next_scaler();
+	CHECK(strcmp(plat_scaler_name(), "xbr") == 0);
+}
+
+
 int
 main(int argc, char** argv)
 {
@@ -307,6 +419,8 @@ main(int argc, char** argv)
 	test_key_names();
 	test_input_state();
 	test_palette_and_scaler();
+	test_xbr();
+	test_source_factor();
 	printf("%d checks, %d failures\n", sChecks, sFailures);
 	return sFailures == 0 ? 0 : 1;
 }
@@ -317,3 +431,4 @@ void plat_audio_close(void) {}
 void plat_audio_lock(void) {}
 void plat_audio_unlock(void) {}
 const char* plat_settings_dir(void) { return "/tmp"; }
+void plat_backend_scaler_changed(void) {}

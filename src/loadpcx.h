@@ -7,6 +7,9 @@
    at the end of a PCX file. */
 bool pcx_read_palette(const char *file, unsigned char *rgb);
 
+/* Port: 2 for 320x200 art stored with doubled pixels, else 1. */
+int pcx_source_factor(const char *file);
+
 
 class PCX_IMAGE {
 public:

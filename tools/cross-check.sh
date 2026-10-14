@@ -21,10 +21,10 @@ n=0
 for f in src/*.cpp src/platform/audio_mixer.cpp src/platform/platform_common.cpp \
 		src/platform/video_scaler.cpp src/platform/keynames.cpp \
 		src/platform/platform_haiku.cpp; do
-	"$HAIKU_CROSS-g++" -std=gnu++17 -O2 -w -Wno-write-strings -Isrc $INC \
+	"$HAIKU_CROSS-g++" -std=gnu++17 -O2 -w -Wno-write-strings -Isrc $(echo $INC | sed 's/-I/-idirafter /g') \
 		-c "$f" -o "$OUT/$(basename "$f" .cpp).o"
 	n=$((n + 1))
 done
-"$HAIKU_CROSS-gcc" -O2 -w $INC -c src/third_party/stb_vorbis.c -o "$OUT/stb_vorbis.o"
+"$HAIKU_CROSS-gcc" -O2 -w $(echo $INC | sed 's/-I/-idirafter /g') -c src/third_party/stb_vorbis.c -o "$OUT/stb_vorbis.o"
 rm -rf "$OUT"
 echo "OK: $((n + 1)) files compiled for Haiku x86_64"

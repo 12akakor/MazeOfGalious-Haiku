@@ -12,7 +12,8 @@ Based on the upstream nightly `mog-svn-20120228` (game code identical to
     make            # builds ./MazeOfGalious
     make run        # windowed
     make test       # unit tests + 1400-frame comparison with the reference
-    make package    # mazeofgalious-0.63.1-2-x86_64.hpkg
+    make package    # mazeofgalious-0.63.2-1-x86_64.hpkg and
+                    # mazeofgalious_extras-0.63.2-1-any.hpkg (extra sets)
 
 Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 `mimeset`, `package`; on Haiku: `pkgman install haiku_devel` if missing).
@@ -20,12 +21,12 @@ Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 ## Keys
 
 Cursor keys move/jump/climb, Space attacks, M fires the secondary weapon,
-F1 item screen, F2 pause, F10/9 graphic set, F11/0 sound set, PgUp/PgDn zoom,
+F1 item screen, F2 pause, F3 scaling filter (xBR, nearest, sharp), F10/9 graphic set, F11/0 sound set, PgUp/PgDn zoom,
 Esc title screen, Alt+Enter full screen, F12 quit. Keys can be redefined on
 the title screen (K). The game starts in a window; command line
 `--fullscreen` starts in full screen.
 
-Settings (`MoG.cfg`) are stored in `~/config/settings/MazeOfGalious/`.
+Settings (`MoG.cfg`, and `port.cfg` for the scaling filter) are stored in `~/config/settings/MazeOfGalious/`.
 The package installs the executable in `apps/`, the game data in
 `data/MazeOfGalious/` and the documentation in
 `documentation/packages/mazeofgalious/`.
@@ -37,7 +38,8 @@ The package installs the executable in `apps/`, the game data in
                         scaler, Haiku back end
     src/third_party/    stb_vorbis (public domain / MIT)
     src/test/           deterministic test hooks (only with -DMOG_TESTHOOKS)
-    data/               graphics, sound, rooms
+    data/               graphics, sound, rooms (main package)
+    data-extras/        extra graphic and sound sets (extras package)
     tests/              unit tests, input scripts, golden frame hashes
     tools/              test, reference, icon and package scripts
     docs/port/          analysis, plan and decisions (Dutch)
@@ -46,4 +48,5 @@ The package installs the executable in `apps/`, the game data in
 
 Game code and data: GNU GPL v2 (see LICENSE), (c) 2002-2009 Brain Games.
 stb_vorbis: public domain or MIT (src/third_party/LICENSE.stb_vorbis.txt).
+xBR-lv2 filter: C++ port of Hyllian's shader, MIT (src/third_party/LICENSE.xbr.txt).
 Original game (c) 1987 Konami.

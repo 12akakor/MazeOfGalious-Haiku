@@ -39,6 +39,15 @@ void plat_present(const uint8_t* pixels);
 bool plat_set_fullscreen(bool fullscreen);
 bool plat_is_fullscreen(void);
 
+/* Scaling filter: "xbr" (default), "sharp" or "nearest". */
+void plat_set_scaler(const char* name);
+void plat_next_scaler(void);
+const char* plat_scaler_name(void);
+
+/* 2 when the current graphics set is 320x200 art stored with doubled pixels
+   (the "original" set), 1 otherwise. Used by the scaler. */
+void plat_set_source_factor(int factor);
+
 
 /* Time ------------------------------------------------------------------ */
 

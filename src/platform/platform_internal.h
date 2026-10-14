@@ -13,6 +13,15 @@ void plat_internal_push_event(int type, MOGKey key, int modifiers);
 bool plat_internal_pop_event(PlatEvent* event);
 bool plat_internal_input_override(void);
 
+/* Current scaler and source factor (see plat_set_scaler()). */
+class Scaler;
+Scaler* plat_internal_scaler(void);
+int plat_internal_source_factor(void);
+
+/* Implemented by the back end: called after the scaler changed (e.g. to show
+   its name in the window title). */
+void plat_backend_scaler_changed(void);
+
 /* Palette -> 32 bit pixels (0xffRRGGBB, matches B_RGB32 on little endian). */
 void plat_internal_convert(const uint8_t* src, uint32_t* dst, int count);
 

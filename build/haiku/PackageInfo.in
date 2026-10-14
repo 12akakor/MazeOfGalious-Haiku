@@ -2,7 +2,7 @@ name			mazeofgalious
 version			@VERSION@
 architecture	x86_64
 summary			"Maze of Galious, remake of the Konami MSX classic"
-description		"Remake of Knightmare II: The Maze of Galious (Konami, 1987) by Brain Games. Native Haiku/RenkuOS port. Keys: cursor keys, space, F1 items, F2 pause, F10/F11 graphic and sound set, Alt+Enter full screen, F12 quit."
+description		"Remake of Knightmare II: The Maze of Galious (Konami, 1987) by Brain Games. Native Haiku/RenkuOS port. Keys: cursor keys, space, F1 items, F2 pause, F3 scaling filter (xBR, nearest, sharp), F10/F11 graphic and sound set, Alt+Enter full screen, F12 quit. Optional extra sets: package mazeofgalious_extras."
 
 packager		"Akakor"
 vendor			"Brain Games"

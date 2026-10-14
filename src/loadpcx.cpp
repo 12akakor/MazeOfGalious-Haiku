@@ -306,3 +306,58 @@ bool pcx_read_palette(const char *file, unsigned char *rgb)
 	fclose(fp);
 	return true;
 } /* pcx_read_palette */ 
+
+
+/* Port: 2 when the 8 bit PCX image is made of 2x2 blocks of equal pixels
+   (320x200 art stored at 640x400, like the "original" graphics set), 1
+   otherwise or when the file cannot be read. */
+int pcx_source_factor(const char *file)
+{
+	FILE *fp=fopen(file,"rb");
+	unsigned char header[128];
+	int width,height,bytes_per_line,x,y,count,same=0,total=0;
+	unsigned char *pixels;
+	long n,size;
+
+	if (fp==NULL) return 1;
+	if (fread(header,1,128,fp)!=128 || header[0]!=10 || header[3]!=8 || header[65]!=1) {
+		fclose(fp);
+		return 1;
+	} /* if */ 
+	width=(header[8]|(header[9]<<8))-(header[4]|(header[5]<<8))+1;
+	height=(header[10]|(header[11]<<8))-(header[6]|(header[7]<<8))+1;
+	bytes_per_line=header[66]|(header[67]<<8);
+	if (width<2 || height<2 || bytes_per_line<width) {
+		fclose(fp);
+		return 1;
+	} /* if */ 
+	size=(long)bytes_per_line*height;
+	pixels=new unsigned char[size];
+	n=0;
+	while(n<size) {
+		int c=fgetc(fp);
+		if (c==EOF) break;
+		if ((c&0xC0)==0xC0) {
+			int v=fgetc(fp);
+			if (v==EOF) break;
+			for(count=c&0x3F;count>0 && n<size;count--) pixels[n++]=(unsigned char)v;
+		} else {
+			pixels[n++]=(unsigned char)c;
+		} /* if */ 
+	} /* while */ 
+	fclose(fp);
+	if (n<size) {
+		delete []pixels;
+		return 1;
+	} /* if */ 
+	for(y=0;y+1<height;y+=2) {
+		unsigned char *r0=pixels+(long)y*bytes_per_line;
+		unsigned char *r1=r0+bytes_per_line;
+		for(x=0;x+1<width;x+=2) {
+			total++;
+			if (r0[x]==r0[x+1] && r0[x]==r1[x] && r0[x]==r1[x+1]) same++;
+		} /* for */ 
+	} /* for */ 
+	delete []pixels;
+	return (total>0 && same*100>=total*97) ? 2 : 1;
+} /* pcx_source_factor */ 

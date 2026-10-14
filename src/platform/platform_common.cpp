@@ -2,6 +2,7 @@
  * Platform code shared by all back ends: key state, event queue, palette.
  */
 #include "platform_internal.h"
+#include "video_scaler.h"
 
 #include <mutex>
 #include <string.h>
@@ -19,6 +20,8 @@ int sQueueHead = 0;
 int sQueueCount = 0;
 
 uint8_t sPalette[768];
+Scaler* sScaler = NULL;
+int sSourceFactor = 1;
 uint32_t sLut[256];
 
 }	// namespace
@@ -129,4 +132,50 @@ plat_modifiers(void)
 		|| sKeys[MOGK_RSUPER])
 		modifiers |= PLAT_MOD_META;
 	return modifiers;
+}
+
+
+void
+plat_set_scaler(const char* name)
+{
+	sScaler = scaler_for_name(name);
+	plat_backend_scaler_changed();
+}
+
+
+void
+plat_next_scaler(void)
+{
+	sScaler = scaler_next(plat_internal_scaler());
+	plat_backend_scaler_changed();
+}
+
+
+const char*
+plat_scaler_name(void)
+{
+	return plat_internal_scaler()->Name();
+}
+
+
+Scaler*
+plat_internal_scaler(void)
+{
+	if (sScaler == NULL)
+		sScaler = scaler_for_name("xbr");
+	return sScaler;
+}
+
+
+void
+plat_set_source_factor(int factor)
+{
+	sSourceFactor = factor == 2 ? 2 : 1;
+}
+
+
+int
+plat_internal_source_factor(void)
+{
+	return sSourceFactor;
 }
