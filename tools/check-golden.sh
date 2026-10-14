@@ -5,7 +5,7 @@ set -e
 ROOT=$(dirname "$(readlink -f "$0")")/..
 BIN=$1; SC=${2:-basic}
 OUT=$(mktemp -d)
-"$ROOT/tools/run-test.sh" "$BIN" "$ROOT/tests/scripts/$SC.txt" "$OUT" 1400 ""
+sh "$ROOT/tools/run-test.sh" "$BIN" "$ROOT/tests/scripts/$SC.txt" "$OUT" 1400 ""
 if cmp -s "$OUT/hashes.txt" "$ROOT/tests/golden/$SC/hashes.txt"; then
 	echo "PASS $SC: all $(wc -l < "$OUT/hashes.txt") frames identical"
 	rm -rf "$OUT"

@@ -1531,10 +1531,12 @@ void GameCycle(BYTE *screen,int dx,int dy)
 
 							n_fired_arrows=0;
 							n_fired_mines=0;
-							player_experience[0]=player_experience[0]=0;
+							/* Port: upstream wrote player_experience[0]=player_experience[0]=0 (probably
+							   meant [1]); behaviour kept. */
+							player_experience[0]=0;
 							player_denergy[0]=player_energy[0]=player_max[0];
 							player_denergy[1]=player_energy[1]=player_max[1];
-							player_dexperience[0]=player_dexperience[0]=0;
+							player_dexperience[0]=0;
 							live_character[0]=live_character[1]=true;
 							character=0;
 							freezed=0;
