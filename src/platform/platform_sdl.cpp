@@ -170,9 +170,13 @@ main(int argc, char** argv)
 			strerror(errno));
 		return 1;
 	}
+	const char* settings = getenv("MOG_SETTINGS");
 	const char* home = getenv("HOME");
-	snprintf(sSettingsDir, sizeof(sSettingsDir), "%s/.mog",
-		home != NULL ? home : ".");
+	if (settings != NULL)
+		snprintf(sSettingsDir, sizeof(sSettingsDir), "%s", settings);
+	else
+		snprintf(sSettingsDir, sizeof(sSettingsDir), "%s/.mog",
+			home != NULL ? home : ".");
 	mkdir(sSettingsDir, 0755);
 
 	return game_main(argc, argv);

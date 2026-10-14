@@ -92,7 +92,9 @@ const char* plat_key_name(MOGKey key);
    the current directory before game_main() runs. */
 const char* plat_data_dir(void);
 
-/* Writable directory for MoG.cfg and other user files (created if needed). */
+/* Writable directory for MoG.cfg and other user files (created if needed).
+   Both can be overridden with the environment variables MOG_DATA and
+   MOG_SETTINGS (used by the tests). */
 const char* plat_settings_dir(void);
 
 

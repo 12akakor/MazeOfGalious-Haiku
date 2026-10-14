@@ -1,0 +1,26 @@
+name			mazeofgalious
+version			@VERSION@
+architecture	x86_64
+summary			"Maze of Galious, remake of the Konami MSX classic"
+description		"Remake of Knightmare II: The Maze of Galious (Konami, 1987) by Brain Games. Native Haiku/RenkuOS port without SDL. Keys: cursor keys, space, F1 items, F2 pause, F10/F11 graphic and sound set, Alt+Enter full screen, F12 quit."
+
+packager		"Akakor"
+vendor			"Brain Games"
+copyrights		{
+	"2002-2009 Brain Games (Santi Ontañón, Jorrith Schaap and others)"
+}
+licenses		{
+	"GNU GPL v2"
+}
+urls			{
+	"https://mog.jorito.net/"
+}
+
+provides		{
+	mazeofgalious = @VERSION@
+	app:MazeOfGalious = @VERSION@
+}
+requires		{
+	haiku
+	lib:libstdc++
+}
