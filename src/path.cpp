@@ -11,7 +11,9 @@
 #include <string.h>
 #include <strings.h>
 
+#ifndef NAME_MAX
 #define NAME_MAX	256
+#endif
 
 /* Paths: */ 
 
@@ -170,7 +172,7 @@ void init_paths(void)
 #else
 void init_paths(void) {
 
-  int i,j;
+  int i=0,j;
   DIR *dd;
   struct dirent *direntry;
   

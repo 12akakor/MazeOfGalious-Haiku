@@ -72,10 +72,10 @@ obj/unit_tests: $(UNIT_SRCS) obj/haiku/third_party/stb_vorbis.o
 
 test: $(NAME)-test obj/unit_tests
 	./obj/unit_tests data
-	tools/check-golden.sh ./$(NAME)-test basic
+	sh tools/check-golden.sh ./$(NAME)-test basic
 
 package: $(NAME)
-	tools/make-package.sh
+	sh tools/make-package.sh
 
 clean:
 	rm -rf obj $(NAME) $(NAME)-test *.hpkg
