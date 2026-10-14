@@ -59,8 +59,10 @@ Noteer per punt OK of het probleem.
 
 | # | Controle | Verwacht |
 |---|---|---|
-| 15 | Titelbalk | Toont het filter, bijvoorbeeld `Maze of Galious v0.63 [xbr]` |
-| 16 | F3 (meerdere keren) | Wisselt xbr, nearest, sharp; beeld verandert, keuze blijft bewaard na herstart |
+| 15 | Titelbalk en venster | Toont het filter, bijvoorbeeld `Maze of Galious v0.63 [xbr]`; venster groot (ongeveer 90% van de schermbreedte), te vergroten en te maximaliseren |
+| 15b | K op titelscherm | Toetsenscherm noemt ook F3 (filter) en ALT ENTER (volledig scherm) |
+| 15c | Standaard sets (zonder MoG.cfg) | Graphics naramura, geluid jorito |
+| 16 | F3 (meerdere keren) | Wisselt xbr, nearest, sharp; nearest is kleiner met randen, sharp en xbr vullen het venster; verschil xbr is het duidelijkst bij set original; keuze blijft bewaard |
 | 17 | xbr, set original | Gladde contouren, geen blokjes |
 | 18 | Venster groter maken | Beeld schaalt mee (16:10), zwarte randen alleen waar nodig |
 | 19 | Alt+Enter met xbr | Volledig scherm vult de hoogte; spel blijft vloeiend (25 fps) |
@@ -71,8 +73,8 @@ Noteer per punt OK of het probleem.
 ## 5. Pakket
 
     make package
-    pkgman install ./mazeofgalious-0.63.2-1-x86_64.hpkg
-    pkgman install ./mazeofgalious_extras-0.63.2-1-any.hpkg   (optioneel, extra sets)
+    pkgman install ./mazeofgalious-0.63.2-2-x86_64.hpkg
+    pkgman install ./mazeofgalious_extras-0.63.2-2-any.hpkg   (optioneel, extra sets)
 
 Controle: "Maze of Galious" staat in het Deskbar-menu onder Applications (alleen het programma, geen mappen) en start van daaruit in een venster.
 

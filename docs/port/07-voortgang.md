@@ -36,6 +36,15 @@ Standaardinstellingen lazen `g_paths[4]` en `s_paths[2]` (vaste posities). Met m
 - **Extra sets** als apart pakket `mazeofgalious_extras` (graphics naramura, hinox, boltian, alternate, alfonso; geluid Bart, Rob, wolf). packagefs voegt de mappen samen met die van het hoofdpakket. Alle vijf grafische sets geladen en getekend in een testrun.
 - Unit tests: 97 checks.
 
+## Versie 2, eerste test op Haiku (2026-10-14)
+
+- `make test` faalde: testhooks-macro `rand()` botste met `<algorithm>`. Opgelost; controlescript compileert nu ook de testvariant.
+- Opmerkingen Akakor en oplossing (0.63.2-2):
+  - F3 niet uitgelegd: toetsenscherm (K) noemt nu F3 en ALT ENTER; afsluiten staat er als F12 OR ALT Q (was APPLE+Q).
+  - F3 gaf geen zichtbaar verschil: het venster was 640x400 (scherm van de VM te klein voor 2x); bij een 640x400-set geven alle filters dan hetzelfde beeld. Het venster opent nu zo groot als past (16:10) en kan gemaximaliseerd worden.
+  - Standaard beste sets: naramura (graphics) zit nu in het hoofdpakket; standaard naramura en jorito.
+- Golden test blijft 1400/1400 identiek: de test gebruikt een eigen datamap met alleen de set original.
+
 ## Nog te doen
 
 1. Versie 2 testen in de Haiku-VM: `make test`, checklist punt 15 tot en met 22 in `06-testen-op-haiku.md`.

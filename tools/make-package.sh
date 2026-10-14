@@ -9,7 +9,7 @@
 set -e
 ROOT=$(dirname "$(readlink -f "$0")")/..
 cd "$ROOT"
-VERSION=0.63.2-1
+VERSION=0.63.2-2
 PKG=obj/pkg
 PACKAGE=${PKGTOOL:-package}
 rm -rf "$PKG"

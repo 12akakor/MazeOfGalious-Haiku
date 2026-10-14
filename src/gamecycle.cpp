@@ -1326,8 +1326,12 @@ void GameCycle(BYTE *screen,int dx,int dy)
 				} /* if */ 
 
 				tile_print("TO GO TO THE TITLE SCREEN PRESS:  ESC",TILE_SIZE_X*2,TILE_SIZE_Y*18,screen,dx,dy);
-				tile_print("TO EXIT THE GAME PRESS:   F12/APPLE+Q",TILE_SIZE_X*2,TILE_SIZE_Y*19,screen,dx,dy);
+				/* Port: Haiku/RenkuOS keys (upstream: F12/APPLE+Q), plus the
+				   port's filter and full screen keys. */
+				tile_print("TO EXIT THE GAME PRESS:  F12 OR ALT Q",TILE_SIZE_X*2,TILE_SIZE_Y*19,screen,dx,dy);
 				tile_print("TO CHANGE THE ZOOM:         PGUP:PGDN",TILE_SIZE_X*2,TILE_SIZE_Y*20,screen,dx,dy);
+				tile_print("TO CHANGE THE GRAPHICS FILTER:     F3",TILE_SIZE_X*2,TILE_SIZE_Y*21,screen,dx,dy);
+				tile_print("TO TOGGLE FULL SCREEN:      ALT ENTER",TILE_SIZE_X*2,TILE_SIZE_Y*22,screen,dx,dy);
 
 				found=false;
 				for(i=0;!found && i<MOGK_LAST;i++) {
