@@ -12,8 +12,8 @@ Based on the upstream nightly `mog-svn-20120228` (game code identical to
     make            # builds ./MazeOfGalious
     make run        # windowed
     make test       # unit tests + 1400-frame comparison with the reference
-    make package    # mazeofgalious-0.63.2-1-x86_64.hpkg and
-                    # mazeofgalious_extras-0.63.2-1-any.hpkg (extra sets)
+    make package    # mazeofgalious-0.63.2-2-x86_64.hpkg and
+                    # mazeofgalious_extras-0.63.2-2-any.hpkg (extra sets)
 
 Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 `mimeset`, `package`; on Haiku: `pkgman install haiku_devel` if missing).
@@ -25,6 +25,10 @@ F1 item screen, F2 pause, F3 scaling filter (xBR, nearest, sharp), F10/9 graphic
 Esc title screen, Alt+Enter full screen, F12 quit. Keys can be redefined on
 the title screen (K). The game starts in a window; command line
 `--fullscreen` starts in full screen.
+
+Defaults: graphics set naramura, sound set jorito, filter xBR. The window
+opens as large as fits on the screen and can be resized or zoomed; the
+filters show their difference when the window is larger than 640x400.
 
 Settings (`MoG.cfg`, and `port.cfg` for the scaling filter) are stored in `~/config/settings/MazeOfGalious/`.
 The package installs the executable in `apps/`, the game data in
@@ -38,7 +42,8 @@ The package installs the executable in `apps/`, the game data in
                         scaler, Haiku back end
     src/third_party/    stb_vorbis (public domain / MIT)
     src/test/           deterministic test hooks (only with -DMOG_TESTHOOKS)
-    data/               graphics, sound, rooms (main package)
+    data/               graphics (original, naramura), sound (original, jorito,
+                        alternate), rooms (main package)
     data-extras/        extra graphic and sound sets (extras package)
     tests/              unit tests, input scripts, golden frame hashes
     tools/              test, reference, icon and package scripts

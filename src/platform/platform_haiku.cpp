@@ -176,8 +176,7 @@ class MoGWindow : public BWindow {
 public:
 	MoGWindow(BRect frame, const char* title)
 		:
-		BWindow(frame, title, B_TITLED_WINDOW, B_NOT_ZOOMABLE
-			| B_ASYNCHRONOUS_CONTROLS)
+		BWindow(frame, title, B_TITLED_WINDOW, B_ASYNCHRONOUS_CONTROLS)
 	{
 		sView = new MoGView(Bounds());
 		AddChild(sView);
@@ -367,15 +366,26 @@ main(int argc, char** argv)
 static BRect
 windowed_frame(void)
 {
+	/* As large as fits comfortably on the screen (90% of the width, 85% of
+	   the height), keeping 16:10; at least the game's own size. The
+	   scaler fills any window size. */
 	BScreen screen;
 	BRect screenFrame = screen.Frame();
-	int scale = 2;
-	while (scale > 1 && (sWidth * scale > screenFrame.Width() * 0.9
-			|| sHeight * scale > screenFrame.Height() * 0.85))
-		scale--;
-	BRect frame(0, 0, sWidth * scale - 1, sHeight * scale - 1);
-	frame.OffsetTo(screenFrame.left + (screenFrame.Width() - frame.Width()) / 2,
-		screenFrame.top + (screenFrame.Height() - frame.Height()) / 2);
+	float maxWidth = (screenFrame.Width() + 1) * 0.90f;
+	float maxHeight = (screenFrame.Height() + 1) * 0.85f;
+	float width = maxWidth;
+	float height = width * sHeight / sWidth;
+	if (height > maxHeight) {
+		height = maxHeight;
+		width = height * sWidth / sHeight;
+	}
+	if (width < sWidth || height < sHeight) {
+		width = sWidth;
+		height = sHeight;
+	}
+	BRect frame(0, 0, (int)width - 1, (int)height - 1);
+	frame.OffsetTo(screenFrame.left + (int)((screenFrame.Width() - frame.Width()) / 2),
+		screenFrame.top + (int)((screenFrame.Height() - frame.Height()) / 2));
 	return frame;
 }
 
