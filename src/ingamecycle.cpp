@@ -1,8 +1,7 @@
 #include "math.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "SDL.h"
-#include "SDL_mixer.h"
+#include "platform/platform.h"
 #include "sound.h"
 #include "MOGtypes.h"
 
@@ -43,7 +42,7 @@ extern bool sword;				/* Hay que dibujar la espada?	*/
 extern bool old_sword;
 extern int sword_x,sword_y;	/* Coordenadas de la espada.	*/ 
 extern int sword_time;
-extern unsigned char old_keyboard[SDLK_LAST];
+extern unsigned char old_keyboard[MOGK_LAST];
 extern int in_ladder;			/* En qué escalera está el personaje	*/ 
 extern bool previous_x_collision;	/* Hubo una colisión en X en el frame anterior? */ 
 extern bool previous_y_collision;	/* Hubo una colisión en Y en el frame anterior? */ 
@@ -127,8 +126,8 @@ extern int zoom;
 
 
 /* Teclas: */ 
-extern SDLKey UP_KEY,DOWN_KEY,LEFT_KEY,RIGHT_KEY;
-extern SDLKey SWORD_KEY,WEAPON_KEY,ITEM_KEY,PAUSE_KEY;
+extern MOGKey UP_KEY,DOWN_KEY,LEFT_KEY,RIGHT_KEY;
+extern MOGKey SWORD_KEY,WEAPON_KEY,ITEM_KEY,PAUSE_KEY;
 
 
 
@@ -152,7 +151,7 @@ void GameInGameCycle(int dx,int dy)
 	bool invert_move=false;
 
 	if (map==8 && !item[6]) {
-		SDLKey tmp;
+		MOGKey tmp;
 		invert_move=true;
 
 		tmp=LEFT_KEY;
@@ -160,8 +159,8 @@ void GameInGameCycle(int dx,int dy)
 		RIGHT_KEY=tmp;
 	} /* if */ 
 
-	SDL_PumpEvents();
-	keyboard = (unsigned char *)SDL_GetKeyState(NULL);
+	plat_pump_events();
+	keyboard = plat_key_state();
 
 	/* Mascara de colisión: */ 
 	if (in_ladder==-1) colision=T_WALL|T_LADDER_WALL|T_DOOR_WALL;
@@ -689,8 +688,8 @@ void GameInGameCycle(int dx,int dy)
 
 
 	if (item[19] &&
-		((keyboard[SDLK_LCTRL] && !old_keyboard[SDLK_LCTRL]) ||
-		 (keyboard[SDLK_RCTRL] && !old_keyboard[SDLK_RCTRL])) &&
+		((keyboard[MOGK_LCTRL] && !old_keyboard[MOGK_LCTRL]) ||
+		 (keyboard[MOGK_RCTRL] && !old_keyboard[MOGK_RCTRL])) &&
 		bible_counter>0 && bible_subcounter==0) {
 		bible_counter--;
 		bible_subcounter=128;
@@ -2337,7 +2336,7 @@ void GameInGameCycle(int dx,int dy)
 	} /* if */ 
 
 	if (invert_move) {
-		SDLKey tmp;
+		MOGKey tmp;
 		tmp=LEFT_KEY;
 		LEFT_KEY=RIGHT_KEY;
 		RIGHT_KEY=tmp;

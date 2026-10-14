@@ -1,7 +1,10 @@
-#ifndef __BRAIN_SDL_SOUND
-#define __BRAIN_SDL_SOUND
+#ifndef __BRAIN_SOUND
+#define __BRAIN_SOUND
 
-typedef Mix_Chunk * SOUNDT;
+#include <stdint.h>
+
+struct MogSound;
+typedef MogSound * SOUNDT;
 
 bool Sound_initialization(void);
 void Sound_release(void);
@@ -20,7 +23,7 @@ void Sound_unpause_music(void);
 
 void music_recovery(void);
 
-void myMusicPlayer(void *udata, Uint8 *stream, int len);
+void myMusicPlayer(int16_t *stream, int frames);
 void PlayAudioQueue(void); 
 
 #endif

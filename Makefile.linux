@@ -1,23 +1,61 @@
 # Linux builds (development and reference only).
-#   make -f Makefile.linux ref        upstream SDL 1.2 code path (+ test hooks)
+#   make -f Makefile.linux linux       game with the SDL development back end
+#   make -f Makefile.linux linux-test  same, with deterministic test hooks
+#   make -f Makefile.linux unit        unit tests of the portable platform code
 CXX ?= g++
 GAME_SRCS = $(wildcard src/*.cpp)
 CXXFLAGS_COMMON = -O2 -g -Wno-write-strings -Isrc
 
-REF_OBJS = $(patsubst src/%.cpp,obj/ref/%.o,$(GAME_SRCS)) obj/ref/test/testhooks.o
-REF_CXXFLAGS = $(CXXFLAGS_COMMON) -DMOG_TESTHOOKS -include src/test/testhooks.h $(shell sdl-config --cflags)
-REF_LIBS = $(shell sdl-config --libs) -lSDL_image -lSDL_mixer -lSDL_sound
-
-ref: mog-ref
-
-mog-ref: $(REF_OBJS)
-	$(CXX) $^ -o $@ $(REF_LIBS)
-
-obj/ref/%.o: src/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(REF_CXXFLAGS) -c $< -o $@
+# The upstream SDL 1.2 reference (used to create tests/golden) is the git tag
+# "reference-sdl"; see tools/build-reference.sh.
 
 clean:
-	rm -rf obj mog-ref
+	rm -rf obj mog-ref mog-linux mog-linux-test
 
-.PHONY: ref clean
+.PHONY: clean
+
+# Port build: game + portable platform code + SDL back end (no SDL_mixer,
+# SDL_sound or SDL_image).
+PORT_SRCS = $(GAME_SRCS) $(wildcard src/platform/*.cpp)
+PORT_SRCS := $(filter-out src/platform/platform_haiku.cpp,$(PORT_SRCS))
+PORT_CFLAGS = -O2 -g
+PORT_CXXFLAGS = $(CXXFLAGS_COMMON) -Wall -Wno-unused -Wno-sign-compare -Wno-parentheses -Wno-format-security -Wno-misleading-indentation -Wno-char-subscripts -Wno-unused-result -Wno-comment -Wno-format-overflow -Wno-stringop-truncation -Wno-format-truncation $(shell sdl-config --cflags)
+PORT_LIBS = $(shell sdl-config --libs) -lm
+
+LINUX_OBJS = $(patsubst src/%.cpp,obj/linux/%.o,$(PORT_SRCS)) obj/linux/third_party/stb_vorbis.o
+TEST_OBJS = $(patsubst src/%.cpp,obj/test/%.o,$(PORT_SRCS)) obj/test/third_party/stb_vorbis.o obj/test/test/testhooks.o
+
+linux: mog-linux
+linux-test: mog-linux-test
+
+mog-linux: $(LINUX_OBJS)
+	$(CXX) $^ -o $@ $(PORT_LIBS)
+
+mog-linux-test: $(TEST_OBJS)
+	$(CXX) $^ -o $@ $(PORT_LIBS)
+
+obj/linux/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(PORT_CXXFLAGS) -c $< -o $@
+
+obj/test/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(PORT_CXXFLAGS) -DMOG_TESTHOOKS -include src/test/testhooks.h -c $< -o $@
+
+obj/%/third_party/stb_vorbis.o: src/third_party/stb_vorbis.c
+	@mkdir -p $(dir $@)
+	$(CC) $(PORT_CFLAGS) -w -c $< -o $@
+
+.PHONY: linux linux-test
+
+# Unit tests for the portable platform code.
+UNIT_SRCS = tests/unit/unit_tests.cpp src/filehandling.cpp src/platform/audio_mixer.cpp src/platform/platform_common.cpp src/platform/video_scaler.cpp src/platform/keynames.cpp src/loadpcx.cpp
+
+unit: obj/unit_tests
+	./obj/unit_tests data
+
+obj/unit_tests: $(UNIT_SRCS) obj/linux/third_party/stb_vorbis.o
+	@mkdir -p obj
+	$(CXX) -O1 -g -Wall -Wno-write-strings -Isrc $^ -o $@
+
+.PHONY: unit

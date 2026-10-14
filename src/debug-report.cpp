@@ -1,8 +1,7 @@
 #include "math.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "SDL.h"
-#include "SDL_mixer.h"
+#include "platform/platform.h"
 #include "sound.h"
 #include "MOGtypes.h"
 
@@ -55,7 +54,7 @@ extern bool sword;				/* Hay que dibujar la espada?	*/
 extern bool old_sword;
 extern int sword_x,sword_y;	/* Coordenadas de la espada.	*/ 
 extern int sword_time;
-extern unsigned char old_keyboard[SDLK_LAST];
+extern unsigned char old_keyboard[MOGK_LAST];
 extern int in_ladder;			/* En quÈ escalera est· el personaje	*/ 
 extern bool previous_x_collision;	/* Hubo una colisiÛn en X en el frame anterior? */ 
 extern bool previous_y_collision;	/* Hubo una colisiÛn en Y en el frame anterior? */ 
@@ -154,9 +153,9 @@ extern int zoom;
 
 
 /* Teclas: */ 
-extern SDLKey UP_KEY,DOWN_KEY,LEFT_KEY,RIGHT_KEY;
-extern SDLKey SWORD_KEY,WEAPON_KEY,ITEM_KEY,PAUSE_KEY;
-extern SDLKey last_word[16];
+extern MOGKey UP_KEY,DOWN_KEY,LEFT_KEY,RIGHT_KEY;
+extern MOGKey SWORD_KEY,WEAPON_KEY,ITEM_KEY,PAUSE_KEY;
+extern MOGKey last_word[16];
 
 extern char password[48];
 extern int password_pos;
@@ -403,17 +402,17 @@ extern SOUNDT S_bdemonbullet,S_lightning;
 
 	{
 		unsigned char *keyboard;
-		SDL_PumpEvents();
-		keyboard = (unsigned char *)SDL_GetKeyState(NULL);
+		plat_pump_events();
+		keyboard = plat_key_state();
 
 		fprintf(fp,"keyboard:\n");
-		for(i=0;i<SDLK_LAST;i++) {
+		for(i=0;i<MOGK_LAST;i++) {
 			fprintf(fp,"%.3i - %s\n",i,(keyboard[i] ? "true":"false"));
 		} /* for */ 
 	}
 
 	fprintf(fp,"old_keyboard:\n");
-	for(i=0;i<SDLK_LAST;i++) {
+	for(i=0;i<MOGK_LAST;i++) {
 		fprintf(fp,"%.3i - %s\n",i,(old_keyboard[i] ? "true":"false"));
 	} /* for */ 
 

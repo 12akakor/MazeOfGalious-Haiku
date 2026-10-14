@@ -20,6 +20,9 @@ void th_apply_input(unsigned char* keystate, int count);
 /* palette: 256*3 bytes RGB. Returns nonzero when the run is complete. */
 int  th_end_frame(const unsigned char* buffer, int w, int h, const unsigned char* palette);
 int  th_rand(void);
+/* Renders one frame (1/25 s) of audio and appends it to MOG_TEST_OUT/audio.raw
+   (44100 Hz stereo int16 little endian). */
+void th_audio_frame(void);
 
 #ifdef __cplusplus
 }

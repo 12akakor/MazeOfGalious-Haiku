@@ -1,6 +1,12 @@
 #ifndef __LOADPCX_HEADER
 #define __LOADPCX_HEADER
 
+#include "MOGtypes.h"
+
+/* Port: reads the 256 colour palette (768 bytes RGB, 8 bit per component)
+   at the end of a PCX file. */
+bool pcx_read_palette(const char *file, unsigned char *rgb);
+
 
 class PCX_IMAGE {
 public:

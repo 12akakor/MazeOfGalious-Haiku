@@ -1,13 +1,11 @@
-#include "SDL.h"
-#include "SDL_mixer.h"
-#include "SDL_sound.h"
+#include "platform/platform.h"
+#include "platform/audio_mixer.h"
 #include "sound.h"
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
 #include "MOGtypes.h"
 
-#define AUDIO_BUFFER	4096
 
 
 /* Paths: */ 
@@ -27,46 +25,28 @@ bool sound_enabled=false;
 int music_position=0;
 bool playing_music=false;
 bool music_loaded[8]={false,false,false,false,false,false,false,false};			
-Sound_Sample *music_sound[8]={0,0,0,0,0,0,0,0};
+MogStream *music_sound[8]={0,0,0,0,0,0,0,0};
 char music_files[8][128];		/* File names */ 
 char music_realfiles[8][128];	/* File names including music directory */ 
 
 
 bool Sound_initialization(void)
 {
-    char SoundcardName[256];
-	int audio_rate = 44100;
-	int audio_channels = 2;
-	int audio_bufsize = AUDIO_BUFFER;
-	Uint16 audio_format = AUDIO_S16;
-	SDL_version compile_version;
+	/* Port: SDL_mixer/SDL_sound replaced by the portable mixer. In test mode
+	   no device is opened; the test driver renders audio itself. */
+	bool openDevice=getenv("MOG_TEST_FRAMES")==NULL;
 
 	sound_enabled=true;
-	fprintf (stderr, "Initializing SDL_mixer.\n");
-	if (Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_bufsize))  {
-	  fprintf (stderr, "Unable to open audio: %s\n", Mix_GetError());
+	fprintf (stderr, "Initializing audio (%s).\n", plat_name());
+	if (!mixer_open(openDevice))  {
+	  fprintf (stderr, "Unable to open audio.\n");
 	  sound_enabled=false;
 	  fprintf (stderr, "Running the game without audio.\n");
 	  return false;	
 	} /* if */ 
 
-	SDL_AudioDriverName (SoundcardName, sizeof (SoundcardName));
-	Mix_QuerySpec (&audio_rate, &audio_format, &audio_channels);
-	fprintf (stderr, "    opened %s at %d Hz %d bit %s, %d bytes audio buffer\n",
-			 SoundcardName, audio_rate, audio_format & 0xFF,
-			 audio_channels > 1 ? "stereo" : "mono", audio_bufsize);
-	MIX_VERSION (&compile_version);
-	fprintf (stderr, "    compiled with SDL_mixer version: %d.%d.%d\n",
-			 compile_version.major,
-			 compile_version.minor,
-			 compile_version.patch);
-	fprintf (stderr, "    running with SDL_mixer version: %d.%d.%d\n",
-			 Mix_Linked_Version()->major,
-			 Mix_Linked_Version()->minor,
-			 Mix_Linked_Version()->patch);
-
-	Sound_Init();
-	Mix_HookMusic(myMusicPlayer, 0);
+	fprintf (stderr, "    opened at %d Hz 16 bit stereo\n", MIXER_RATE);
+	mixer_set_music_hook(myMusicPlayer);
 
 	return true;
 } /* Sound_init */ 
@@ -74,8 +54,8 @@ bool Sound_initialization(void)
 void Sound_release(void)
 {
 	if (sound_enabled) {
-		Sound_Quit();
-		Mix_CloseAudio();
+		mixer_set_music_hook(0);
+		mixer_close();
 	} /* if */ 
 	sound_enabled=false;
 } /* Sound_release */ 
@@ -113,13 +93,13 @@ SOUNDT Sound_create_sound(char *file,int flags)
 			strcpy(name,file);
 			strcat(name,ext[i]);
 			sprintf(name2,"%s%s",s_path,name);
-			if (file_check(name2)) return Mix_LoadWAV(name2);
+			if (file_check(name2)) return snd_load(name2);
 		} /* for */ 
 		for(i=0;i<n_ext;i++) {
 			strcpy(name,file);
 			strcat(name,ext[i]);
 			sprintf(name2,"%s%s",default_s_path,name);
-			if (file_check(name2)) return Mix_LoadWAV(name2);
+			if (file_check(name2)) return snd_load(name2);
 		} /* for */ 
 
 		fprintf(stderr,"ERROR in Sound_create_sound(): Could not load sound file: %s%s.(wav|ogg|mp3)\n",s_path, file);
@@ -132,13 +112,13 @@ SOUNDT Sound_create_sound(char *file,int flags)
 
 void Delete_sound(SOUNDT s)
 {
-	if (sound_enabled) Mix_FreeChunk(s);
+	if (sound_enabled) snd_free(s);
 } /* Delete_sound */ 
 
 
 void Sound_play(SOUNDT s)
 {
-	if (sound_enabled) Mix_PlayChannel(-1,s,0);
+	if (sound_enabled) snd_play(s);
 } /* Sound_play */ 
 
 
@@ -173,33 +153,25 @@ void Sound_obtain_file_name(char *file,char *fullname)
 } /* Sound_obtain_file_name */ 
 
 
-Sound_Sample *Sound_create_stream(char *file)
+MogStream *Sound_create_stream(char *file)
 {
 	int n_ext=6;
 	char *ext[6]={".WAV",".OGG",".MP3",".wav",".ogg",".mp3"};
 	char name[256],name2[256];
 	int i;
 
-	Sound_AudioInfo inf;
-
-	inf.format=AUDIO_S16;
-	inf.channels=2;
-	inf.rate=44100;
-
 	if (sound_enabled) {
 		for(i=0;i<n_ext;i++) {
 			strcpy(name,file);
 			strcat(name,ext[i]);
 			sprintf(name2,"%s%s",s_path,name);
-			if (file_check(name2)) return Sound_NewSampleFromFile(name2,&inf,AUDIO_BUFFER);
-//			if (file_check(name2)) return Sound_NewSampleFromFile(name2,0,AUDIO_BUFFER);
+			if (file_check(name2)) return stream_open(name2);
 		} /* for */ 
 		for(i=0;i<n_ext;i++) {
 			strcpy(name,file);
 			strcat(name,ext[i]);
 			sprintf(name2,"%s%s",default_s_path,name);
-			if (file_check(name2)) return Sound_NewSampleFromFile(name2,&inf,AUDIO_BUFFER);
-//			if (file_check(name2)) return Sound_NewSampleFromFile(name2,0,AUDIO_BUFFER);
+			if (file_check(name2)) return stream_open(name2);
 		} /* for */ 
 		
 		fprintf(stderr,"ERROR in Sound_create_stream(): Could not load sound file: %s%s.(wav|ogg|mp3)\n",s_path, file);
@@ -212,6 +184,7 @@ Sound_Sample *Sound_create_stream(char *file)
 
 void Sound_create_music(char *f1,char *f2,char *f3)
 {
+	mixer_lock();
 	char tmp[128];
 	int seq_len=0;
 
@@ -253,6 +226,7 @@ void Sound_create_music(char *f1,char *f2,char *f3)
 		music_position=0;
 		playing_music=true;
 	} /* if */ 
+	mixer_unlock();
 } /* Sound_create_music */ 
 
 void Sound_subst_music(char *f)
@@ -274,45 +248,54 @@ void Sound_subst_music_now(char *f)
 
 void Sound_release_music(void)
 {
+	mixer_lock();
 	int i;
 
 	if (sound_enabled) {
 		playing_music=false;
 		for(i=0;i<3;i++) {
-			if (music_loaded[i]) Sound_FreeSample(music_sound[i]);
+			if (music_loaded[i]) { stream_close(music_sound[i]); music_sound[i]=0; }
 			music_loaded[i]=false;
 		} /* if */ 
 	} /* if */ 
+	mixer_unlock();
 } /* Sound_release_music */ 
 
 
 void Sound_temporary_release_music(void)
 {
+	mixer_lock();
 	int i;
 
 	if (sound_enabled) {
 		playing_music=false;
 		for(i=0;i<3;i++) {
-			if (music_loaded[i]) Sound_FreeSample(music_sound[i]);
+			if (music_loaded[i]) { stream_close(music_sound[i]); music_sound[i]=0; }
 		} /* if */ 
 	} /* if */ 
+	mixer_unlock();
 } /* Sound_release_music */ 
 
 
 void Sound_pause_music(void)
 {
+	mixer_lock();
 	playing_music=false;
+	mixer_unlock();
 } /* Sound_pause_music */ 
 
 
 void Sound_unpause_music(void)
 {
+	mixer_lock();
 	playing_music=true;
+	mixer_unlock();
 } /* Sound_unpause_music */ 
 
 
 void music_recovery(void)
-{	
+{
+	mixer_lock();	
 	char tmp[128];
 	int seq_len=0;
 //	FILE *fp;
@@ -347,54 +330,48 @@ void music_recovery(void)
 		playing_music=true;
 	} /* if */ 
 
+	mixer_unlock();
 } /* music_recovery */ 
 
 
-void myMusicPlayer(void *udata, Uint8 *stream, int len)
+/* Music hook, called by the mixer from the audio thread with the audio lock
+   held. Plays music_sound[0..2] in sequence; the last loaded part loops. */
+void myMusicPlayer(int16_t *stream, int frames)
 {
 	int i,act=0;
-	Sint16 *ptr2;
 
-	if (stream!=0) {
-		ptr2=(Sint16 *)stream;
-		if (playing_music) {
-			while(act<len) {
-				if (music_loaded[music_position]) {
-					/* Play a music file: */ 
-
-					if ((music_sound[music_position]->flags&SOUND_SAMPLEFLAG_EOF)) {
-						/* End of file: */ 
-						if (music_loaded[music_position+1]) {
-							music_position++;
-						} /* if */ 
-						Sound_Rewind(music_sound[music_position]);
-					} else {
-						/* In the middle of the file: */ 
-						int decoded=0;
-						Sint16 *ptr;
-
-						Sound_SetBufferSize(music_sound[music_position], len-act);
-						
-						decoded=Sound_Decode(music_sound[music_position]);
-						ptr=(Sint16 *)music_sound[music_position]->buffer;
-						for(i=0;i<decoded;i+=2,ptr++,ptr2++) {
-							*ptr2=((Sint32(*ptr)*Sint32(music_volume))/127);
-						} /* for */ 
-						act+=decoded;
-					} /* if */ 
-				} else {
-					/* No music file loaded: */ 
-					for(i=act;i<len;i++) stream[i]=0;
-					act=len;
-				} /* if */ 
-			} /* while */ 
-		} else {
-			/* No music to play: */ 
-			for(i=0;i<len;i++) stream[i]=0;
-		} /* if */ 
-	} else {
-		fprintf(stderr,"ERROR in myMusicPlayer(): null music stream!!\n");
+	if (!playing_music) {
+		/* No music to play: */ 
+		memset(stream,0,sizeof(int16_t)*2*frames);
+		return;
 	} /* if */ 
+
+	while(act<frames) {
+		if (music_loaded[music_position] && music_sound[music_position]!=0) {
+			/* Play a music file: */ 
+			if (stream_eof(music_sound[music_position])) {
+				/* End of file: */ 
+				if (music_loaded[music_position+1] && music_sound[music_position+1]!=0) {
+					music_position++;
+				} /* if */ 
+				stream_rewind(music_sound[music_position]);
+				if (stream_eof(music_sound[music_position])) break;
+			} else {
+				/* In the middle of the file: */ 
+				int16_t *ptr=stream+act*2;
+				int decoded=stream_read(music_sound[music_position],ptr,frames-act);
+				for(i=0;i<decoded*2;i++) {
+					ptr[i]=(int16_t)((int32_t(ptr[i])*int32_t(music_volume))/127);
+				} /* for */ 
+				act+=decoded;
+			} /* if */ 
+		} else {
+			break;
+		} /* if */ 
+	} /* while */ 
+
+	/* No (more) music: */ 
+	if (act<frames) memset(stream+act*2,0,sizeof(int16_t)*2*(frames-act));
 } /* myMusicPlayer */ 
 
 
