@@ -33,5 +33,5 @@ Volledig plan: `docs/port/03-stappenplan-claude-code.md`. Werk fase voor fase, s
 - Tests: `make test` (unit tests + 1400 frames vergelijken met `tests/golden`)
 - Pakket: `make package`
 - Compile-check vanaf een andere machine met cross-compiler: `tools/cross-check.sh`
-- Icoon opnieuw maken: `tools/make_icon.py > build/haiku/icon.rdef`
+- Icoon: bron `build/haiku/icon.svg`; `icon2icon build/haiku/icon.svg build/haiku/icon.hvif -f hvif` (hvif-tools) en `tools/hvif2rdef.py build/haiku/icon.hvif > build/haiku/icon.rdef`
 - Upstream SDL-referentie (alleen nodig om nieuwe golden hashes te maken): git tag `reference-sdl`
