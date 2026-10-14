@@ -25,7 +25,9 @@ int COLOUR_DEPTH = 8;
 
 #define TRANSPARANT_COLOR (0)
 
-bool fullscreen = true;
+// Port: start in a window (upstream started full screen); Alt+Enter or
+// --fullscreen switches.
+bool fullscreen = false;
 
 // Redrawing constant
 int REDRAWING_PERIOD = 40;

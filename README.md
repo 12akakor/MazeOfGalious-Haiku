@@ -12,7 +12,7 @@ Based on the upstream nightly `mog-svn-20120228` (game code identical to
     make            # builds ./MazeOfGalious
     make run        # windowed
     make test       # unit tests + 1400-frame comparison with the reference
-    make package    # mazeofgalious-0.63.1-1-x86_64.hpkg
+    make package    # mazeofgalious-0.63.1-2-x86_64.hpkg
 
 Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 `mimeset`, `package`; on Haiku: `pkgman install haiku_devel` if missing).
@@ -22,9 +22,13 @@ Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 Cursor keys move/jump/climb, Space attacks, M fires the secondary weapon,
 F1 item screen, F2 pause, F10/9 graphic set, F11/0 sound set, PgUp/PgDn zoom,
 Esc title screen, Alt+Enter full screen, F12 quit. Keys can be redefined on
-the title screen (K). Command line: `--window`, `--fullscreen`.
+the title screen (K). The game starts in a window; command line
+`--fullscreen` starts in full screen.
 
 Settings (`MoG.cfg`) are stored in `~/config/settings/MazeOfGalious/`.
+The package installs the executable in `apps/`, the game data in
+`data/MazeOfGalious/` and the documentation in
+`documentation/packages/mazeofgalious/`.
 
 ## Layout
 

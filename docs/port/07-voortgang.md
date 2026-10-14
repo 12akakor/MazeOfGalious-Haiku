@@ -25,9 +25,11 @@ Standaardinstellingen lazen `g_paths[4]` en `s_paths[2]` (vaste posities). Met m
 
 - Handmatige checklist (`make run`): alle punten OK. Het titelscherm heeft geen muziek; dat is ook zo in de upstream-code (muziek start pas na spatie), dus geen fout van de port.
 
+- Pakket 0.63.1-1 installeerde, maar de Deskbar toonde naast het programma ook de datamappen, en starten via de Deskbar gaf volledig scherm (upstream-standaard). Opgelost in 0.63.1-2: Haiku-indeling (`apps/MazeOfGalious`, `data/MazeOfGalious/`, `documentation/packages/mazeofgalious/`) en standaard een venster. Indeling gecontroleerd met de Haiku `package`-tool.
+
 ## Nog te doen
 
-1. `make package` en installatie testen in de Haiku-VM.
+1. Pakket 0.63.1-2 testen in de Haiku-VM (Deskbar, venster, Alt+Enter).
 2. Daarna RenkuOS-VM (zelfde stappen).
 3. Bevindingen terugkoppelen; daarna eventuele fixes.
 
