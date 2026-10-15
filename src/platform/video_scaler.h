@@ -18,6 +18,52 @@
 #include <vector>
 
 
+/* Bilinear (or sharp bilinear) resampling tables from a srcWidth x srcHeight
+   image to a width x height rectangle. */
+class ResampleMap {
+public:
+								ResampleMap()
+									: fSrcWidth(0), fSrcHeight(0), fWidth(0),
+									fHeight(0), fSharp(false) {}
+			void				Build(int srcWidth, int srcHeight, int width,
+									int height, bool sharp);
+			bool				Matches(int srcWidth, int srcHeight, int width,
+									int height, bool sharp) const;
+			/* Writes the output pixels [x0, x1) x [y0, y1); dst points at
+			   output pixel (0, 0). */
+			void				Apply(const uint32_t* src, uint32_t* dst,
+									int stride, int x0, int x1, int y0,
+									int y1) const;
+
+			/* First source column / row used by an output column / row (the
+			   next one is used as well). */
+			int					ColumnSource(int x) const
+									{ return fColIndex[x]; }
+			int					RowSource(int y) const
+									{ return fRowIndex[y]; }
+
+private:
+			int					fSrcWidth;
+			int					fSrcHeight;
+			int					fWidth;
+			int					fHeight;
+			bool				fSharp;
+			std::vector<int>	fColIndex;
+			std::vector<int>	fColWeight;
+			std::vector<int>	fRowIndex;
+			std::vector<int>	fRowWeight;
+};
+
+
+/* Per output subpixel weights of the xBR edge rules. */
+struct XbrWeights {
+	float	f45i[4];
+	float	f45[4];
+	float	f30[4];
+	float	f60[4];
+};
+
+
 class Scaler {
 public:
 	virtual					~Scaler() {}
@@ -63,14 +109,45 @@ public:
 								uint32_t* dst, int dstWidth, int dstHeight,
 								int dstStride);
 
-	/* xBR-lv2 at an integer factor (1..4): out has width*factor x
+	/* xBR-lv2 at an integer factor (1..6): out has width*factor x
 	   height*factor pixels. Exposed for tests. */
 	static	void			Scale(const uint32_t* in, int width, int height,
 								int factor, uint32_t* out);
 
+	/* Tiles filtered again by the last Process() call and the number of
+	   tiles (for the timing display and the tests). */
+			int				LastDirtyTiles() const { return fLastDirty; }
+			int				TileCount() const { return fTilesX * fTilesY; }
+
+	/* Forgets the cache: the next frame is filtered completely. */
+			void			Invalidate() { fValid = false; }
+
 private:
-			std::vector<uint32_t> fArt;
-			std::vector<uint32_t> fScaled;
+			void			_Full(const uint32_t* image);
+			void			_Update(const uint32_t* image);
+
+			/* Only the parts of the image that changed since the previous
+			   frame are filtered again; the members below are that cache. */
+			std::vector<uint32_t> fArt;		/* source, doubling undone */
+			std::vector<uint32_t> fPrevious;	/* art of the previous frame */
+			std::vector<float> fLuma;
+			std::vector<XbrWeights> fWeights;
+			std::vector<uint32_t> fScaled;		/* xBR result */
+			std::vector<uint32_t> fOutput;		/* resampled, rw x rh */
+			ResampleMap		fMap;
+			std::vector<int> fOutColumn;	/* first output column per tile column */
+			std::vector<int> fOutRow;		/* first output row per tile row */
+			std::vector<uint8_t> fDirty;
+			std::vector<int> fDirtyList;
+			int				fWidth = 0;
+			int				fHeight = 0;
+			int				fFactor = 0;
+			int				fOutWidth = 0;
+			int				fOutHeight = 0;
+			int				fTilesX = 0;
+			int				fTilesY = 0;
+			int				fLastDirty = 0;
+			bool			fValid = false;
 };
 
 
