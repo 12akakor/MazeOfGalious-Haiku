@@ -45,9 +45,25 @@ Standaardinstellingen lazen `g_paths[4]` en `s_paths[2]` (vaste posities). Met m
   - Standaard beste sets: naramura (graphics) zit nu in het hoofdpakket; standaard naramura en jorito.
 - Golden test blijft 1400/1400 identiek: de test gebruikt een eigen datamap met alleen de set original.
 
+## Versie 3 (0.63.3-1, 2026-10-15)
+
+Gekozen door Akakor uit de verbeterlijst: punt 1, 2, 5, 6 en 8.
+
+- **Meten (F4):** regel in beeld en in de Terminal met filtertijd (gemiddeld en maximum), deel van het beeld dat opnieuw gefilterd is, tekentijd, fps en vsync-status.
+- **xBR alleen op veranderde delen:** vorige frame, luma, xBR-resultaat en geschaalde uitvoer worden bewaard; alleen blokken van 16x16 kunstpixels die veranderd zijn (plus twee pixels marge, het bereik van xBR) worden opnieuw berekend. Uitvoer bit-identiek aan volledig filteren, gecontroleerd op alle 1400 frames van de testrun met set original en naramura, op vijf venstergroottes. Snelheid (Linux, 2 cores, 1728x1080): naramura 26,0 naar 2,5 ms gemiddeld per frame, original 12,8 naar 1,8 ms. Bij een kamerwissel blijft één frame duur (tot ongeveer 40 ms).
+- **Betere geluidsomzetting:** windowed sinc (Kaiser, 16 nuldoorgangen, afsnijding op 90% van de laagste Nyquist-frequentie) in plaats van lineair. Sinustest 11025 naar 44100 Hz: 83 dB signaal/fout (lineair: 31 dB bij 1 kHz, 8 dB bij 4 kHz).
+- **Vsync:** wacht voor het tekenen op de schermverversing via `BScreen::WaitForRetrace()`. In de RenkuOS-bron melden de VESA- en framebuffer-drivers dit niet (geven -1); intel_extreme en radeon_hd wel. In VirtualBox heeft het dus geen effect; de status staat in de F4-regel. Uit te zetten met `vsync=0` in `port.cfg`.
+- **Venster onthouden:** grootte, positie en volledig scherm in `port.cfg`; `--window`/`--fullscreen` gaan voor. Een opgeslagen positie buiten het scherm wordt genegeerd.
+- Upstream-fout opgelost: `fclose(NULL)` als een PCX-bestand ontbreekt.
+- Unit tests: 111 checks. Golden test 1400/1400 identiek. 60 cross-compilaties zonder fouten.
+
+## Publiceren
+
+HaikuPorts accepteert geen AI-bijdragen. Spritz Depot (spritzdepot.desktoponfire.com) indexeert apps van hun auteurs: per app een klein YAML-bestand ("cicheto") met naam, beschrijving en downloadplek, in een eigen git-repository ("bacaro"); geen bouwrecept. De publicatiepagina zelf kon niet automatisch gelezen worden (robots.txt). Nodig dus: een downloadplek voor de .hpkg-bestanden (bijvoorbeeld GitHub-releases) en een git-repository met het YAML-bestand.
+
 ## Nog te doen
 
-1. Versie 2 testen in de Haiku-VM: `make test`, checklist punt 15 tot en met 22 in `06-testen-op-haiku.md`.
+1. Versie 3 testen in de Haiku-VM: `make test`, checklist punt 15 tot en met 30 in `06-testen-op-haiku.md`.
 2. Daarna RenkuOS-VM (zelfde stappen).
 3. Bevindingen terugkoppelen; daarna eventuele fixes.
 

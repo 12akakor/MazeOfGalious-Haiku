@@ -70,11 +70,24 @@ Noteer per punt OK of het probleem.
 | 21 | Met extras-pakket: F11 | Wisselt door alternate, Bart, jorito, original, Rob, wolf |
 | 22 | CPU in ProcessController | Bij xbr volledig scherm: noteer het percentage |
 
+## 4c. Versie 3: snelheid, geluid, vsync, venster onthouden
+
+| # | Controle | Verwacht |
+|---|---|---|
+| 23 | F4 | Gele regel linksboven: filter, deel opnieuw gefilterd, tekenen, fps, vsync. Dezelfde regel elke seconde in de Terminal. Nog eens F4: weg |
+| 24 | F4, volledig scherm met xbr, in een kamer | Noteer de regel. Verwacht: filter enkele ms, opnieuw gefilterd een klein percentage, 25 fps |
+| 25 | F4, bij wisselen van kamer | Max filter loopt even op (hele beeld opnieuw); geen merkbare hapering |
+| 26 | F4 in VirtualBox | `vsync not supported` (VESA-driver meldt de schermverversing niet); geen vertraging |
+| 27 | Geluid set original (11025 Hz samples) | Helderder dan versie 2, geen gesis of metalig randje; muziek loopt gelijk, geen tikken bij herhalen |
+| 28 | Venster verplaatsen en vergroten, afsluiten, opnieuw starten | Venster terug op dezelfde plek en grootte |
+| 29 | Afsluiten in volledig scherm, opnieuw starten | Start in volledig scherm; `--window` op de commandoregel start toch in een venster |
+| 30 | K op titelscherm | Toetsenscherm noemt ook F4 |
+
 ## 5. Pakket
 
     make package
-    pkgman install ./mazeofgalious-0.63.2-2-x86_64.hpkg
-    pkgman install ./mazeofgalious_extras-0.63.2-2-any.hpkg   (optioneel, extra sets)
+    pkgman install ./mazeofgalious-0.63.3-1-x86_64.hpkg
+    pkgman install ./mazeofgalious_extras-0.63.3-1-any.hpkg   (optioneel, extra sets)
 
 Controle: "Maze of Galious" staat in het Deskbar-menu onder Applications (alleen het programma, geen mappen) en start van daaruit in een venster.
 

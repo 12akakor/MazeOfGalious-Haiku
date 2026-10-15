@@ -54,7 +54,7 @@ Indruk:
 
 ## Status
 
-Geïmplementeerd in versie 2 (0.63.2), zie `07-voortgang.md`. Afwijking van het plan: na xBR wordt bilineair geresampled (niet sharp bilinear), omdat xBR al op bijna de eindgrootte uitkomt; bronfactor wordt automatisch per set bepaald.
+Geïmplementeerd in versie 2 (0.63.2), zie `07-voortgang.md`. Afwijking van het plan: na xBR wordt bilineair geresampled (niet sharp bilinear), omdat xBR al op bijna de eindgrootte uitkomt; bronfactor wordt automatisch per set bepaald. In versie 3 (0.63.3) filtert xBR alleen de veranderde delen van het beeld opnieuw (bit-identiek, ongeveer 10 keer sneller).
 
 ## Besluit (2026-10-14)
 
