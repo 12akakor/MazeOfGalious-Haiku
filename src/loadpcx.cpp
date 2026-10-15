@@ -14,7 +14,6 @@ bool PCX_IMAGE::B_loadpcx(char *nombre)
 
 	fp=f1open(nombre,"rb",GAMEDATA);
 	if (fp==NULL) {
-		fclose(fp);
 		ancho=0;
 		alto=0;
 		image=NULL;
