@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "platform.h"
+#include "resampler.h"
 
 #define STB_VORBIS_HEADER_ONLY
 #include "../third_party/stb_vorbis.c"
@@ -45,7 +46,7 @@ clamp16(int32_t value)
 
 
 /* Converts interleaved int16 (1 or 2 channels, any rate) to stereo at
-   MIXER_RATE with linear interpolation. Returns a malloc'ed buffer. */
+   MIXER_RATE (windowed sinc, see resampler.h). Returns a malloc'ed buffer. */
 int16_t*
 convert_to_output(const int16_t* in, int inFrames, int channels, int rate,
 	int* outFrames)
@@ -55,28 +56,36 @@ convert_to_output(const int16_t* in, int inFrames, int channels, int rate,
 		return NULL;
 	}
 
-	int64_t count = ((int64_t)inFrames * MIXER_RATE + rate - 1) / rate;
+	Resampler resampler;
+	resampler.Init(rate, MIXER_RATE);
+	int64_t count = resampler.OutputFrames(inFrames);
 	int16_t* out = (int16_t*)malloc(sizeof(int16_t) * 2 * (size_t)count);
-	if (out == NULL) {
+
+	/* Stereo copy with silence before and after for the filter. */
+	int before = resampler.Before();
+	int after = resampler.After();
+	size_t paddedFrames = (size_t)before + inFrames + after;
+	int16_t* padded = (int16_t*)calloc(paddedFrames * 2, sizeof(int16_t));
+	if (out == NULL || padded == NULL) {
+		free(out);
+		free(padded);
 		*outFrames = 0;
 		return NULL;
 	}
-
-	for (int64_t i = 0; i < count; i++) {
-		/* Position in source frames, 16.16 fixed point. */
-		int64_t pos = (i * rate << 16) / MIXER_RATE;
-		int index = (int)(pos >> 16);
-		int frac = (int)(pos & 0xffff);
-		int next = index + 1 < inFrames ? index + 1 : inFrames - 1;
-		if (index >= inFrames)
-			index = next = inFrames - 1;
-		for (int c = 0; c < 2; c++) {
-			int sc = channels == 1 ? 0 : c;
-			int32_t a = in[index * channels + sc];
-			int32_t b = in[next * channels + sc];
-			out[i * 2 + c] = (int16_t)(a + (((b - a) * frac) >> 16));
-		}
+	for (int i = 0; i < inFrames; i++) {
+		int16_t* frame = padded + ((size_t)before + i) * 2;
+		frame[0] = in[i * channels];
+		frame[1] = in[i * channels + (channels == 1 ? 0 : 1)];
 	}
+
+	for (int64_t k = 0; k < count; k++) {
+		int64_t index;
+		double fraction;
+		resampler.Position(k, &index, &fraction);
+		/* padded frame 'index' is input frame index - before. */
+		resampler.Frame(padded + (size_t)index * 2, fraction, out + k * 2);
+	}
+	free(padded);
 	*outFrames = (int)count;
 	return out;
 }
@@ -295,7 +304,7 @@ snd_play(MogSound* sound)
 
 /* Streams ------------------------------------------------------------- */
 
-#define STREAM_BUFFER_FRAMES	2048
+#define STREAM_BUFFER_FRAMES	4096
 
 struct MogStream {
 	/* WAV: whole file converted in memory. */
@@ -303,32 +312,35 @@ struct MogStream {
 	int			pcmFrames;
 	int			pcmPosition;
 
-	/* Ogg: decoded on demand and resampled to MIXER_RATE. */
+	/* Ogg: decoded on demand and resampled to MIXER_RATE. The buffer holds
+	   the input frames [bufferStart, bufferStart + bufferFrames). */
 	stb_vorbis*	vorbis;
-	int			rate;
+	Resampler*	resampler;
+	int16_t*	window;			/* Taps() frames, for the stream edges */
 	int16_t		buffer[STREAM_BUFFER_FRAMES * 2];
+	int64_t		bufferStart;
 	int			bufferFrames;
-	int			bufferPosition;
-	uint32_t	fraction;		/* 16.16 position between two frames */
+	int64_t		outPosition;	/* output frames produced */
 	bool		sourceDone;
 
 	bool		eof;
 };
 
 
+/* Drops the frames before keepFrom and decodes until the buffer is full. */
 static void
-stream_fill(MogStream* stream)
+stream_fill(MogStream* stream, int64_t keepFrom)
 {
-	/* Keep the unread frames (at least the current one for interpolation). */
-	int keep = stream->bufferFrames - stream->bufferPosition;
-	if (keep > 0 && stream->bufferPosition > 0) {
-		memmove(stream->buffer, stream->buffer + stream->bufferPosition * 2,
+	int64_t drop = keepFrom - stream->bufferStart;
+	if (drop > stream->bufferFrames)
+		drop = stream->bufferFrames;
+	if (drop > 0) {
+		int keep = stream->bufferFrames - (int)drop;
+		memmove(stream->buffer, stream->buffer + drop * 2,
 			sizeof(int16_t) * 2 * (size_t)keep);
+		stream->bufferFrames = keep;
+		stream->bufferStart += drop;
 	}
-	if (keep < 0)
-		keep = 0;
-	stream->bufferFrames = keep;
-	stream->bufferPosition = 0;
 
 	while (!stream->sourceDone && stream->bufferFrames < STREAM_BUFFER_FRAMES) {
 		int space = STREAM_BUFFER_FRAMES - stream->bufferFrames;
@@ -358,8 +370,11 @@ stream_open(const char* path)
 			return NULL;
 		}
 		stb_vorbis_info info = stb_vorbis_get_info(stream->vorbis);
-		stream->rate = (int)info.sample_rate;
-		stream_fill(stream);
+		stream->resampler = new Resampler();
+		stream->resampler->Init((int)info.sample_rate, MIXER_RATE);
+		stream->window = (int16_t*)malloc(sizeof(int16_t) * 2
+			* (size_t)stream->resampler->Taps());
+		stream_fill(stream, 0);
 	} else {
 		stream->pcm = decode_wav(path, &stream->pcmFrames);
 		if (stream->pcm == NULL) {
@@ -389,28 +404,43 @@ stream_read(MogStream* stream, int16_t* out, int frames)
 		return count;
 	}
 
-	uint32_t step = (uint32_t)(((uint64_t)stream->rate << 16) / MIXER_RATE);
+	const Resampler& resampler = *stream->resampler;
+	const int before = resampler.Before();
+	const int after = resampler.After();
+	const int taps = resampler.Taps();
 	int written = 0;
 	while (written < frames) {
-		if (stream->bufferFrames - stream->bufferPosition < 2
-			&& !stream->sourceDone) {
-			stream_fill(stream);
-		}
-		int available = stream->bufferFrames - stream->bufferPosition;
-		if (available <= 0) {
+		int64_t index;
+		double fraction;
+		resampler.Position(stream->outPosition, &index, &fraction);
+		if (!stream->sourceDone
+			&& index + after >= stream->bufferStart + stream->bufferFrames)
+			stream_fill(stream, index - before);
+		int64_t end = stream->bufferStart + stream->bufferFrames;
+		if (index >= end) {
 			stream->eof = true;
 			break;
 		}
-		const int16_t* a = stream->buffer + stream->bufferPosition * 2;
-		const int16_t* b = available > 1 ? a + 2 : a;
-		int32_t f = (int32_t)stream->fraction;
-		out[written * 2] = (int16_t)(a[0] + (((b[0] - a[0]) * f) >> 16));
-		out[written * 2 + 1] = (int16_t)(a[1] + (((b[1] - a[1]) * f) >> 16));
-		written++;
 
-		stream->fraction += step;
-		stream->bufferPosition += (int)(stream->fraction >> 16);
-		stream->fraction &= 0xffff;
+		int64_t first = index - before;
+		const int16_t* window;
+		if (first >= stream->bufferStart && first + taps <= end)
+			window = stream->buffer + (first - stream->bufferStart) * 2;
+		else {
+			/* Start or end of the stream: silence outside it. */
+			for (int j = 0; j < taps; j++) {
+				int64_t f = first + j;
+				bool inside = f >= stream->bufferStart && f < end;
+				const int16_t* src = stream->buffer
+					+ (f - stream->bufferStart) * 2;
+				stream->window[j * 2] = inside ? src[0] : 0;
+				stream->window[j * 2 + 1] = inside ? src[1] : 0;
+			}
+			window = stream->window;
+		}
+		resampler.Frame(window, fraction, out + written * 2);
+		written++;
+		stream->outPosition++;
 	}
 	return written;
 }
@@ -434,11 +464,11 @@ stream_rewind(MogStream* stream)
 		return;
 	}
 	stb_vorbis_seek_start(stream->vorbis);
+	stream->bufferStart = 0;
 	stream->bufferFrames = 0;
-	stream->bufferPosition = 0;
-	stream->fraction = 0;
+	stream->outPosition = 0;
 	stream->sourceDone = false;
-	stream_fill(stream);
+	stream_fill(stream, 0);
 }
 
 
@@ -449,6 +479,8 @@ stream_close(MogStream* stream)
 		return;
 	if (stream->vorbis != NULL)
 		stb_vorbis_close(stream->vorbis);
+	delete stream->resampler;
+	free(stream->window);
 	free(stream->pcm);
 	free(stream);
 }
