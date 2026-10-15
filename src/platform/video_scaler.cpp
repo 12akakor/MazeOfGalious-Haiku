@@ -48,6 +48,34 @@ parallel_rows(int count, Body body)
 }
 
 
+/* Runs body(begin, end) over [0, count) items, using threads only when
+   there are at least 'minimum' items. */
+template<typename Body>
+void
+parallel_items(int count, int minimum, Body body)
+{
+	unsigned int cores = std::thread::hardware_concurrency();
+	int threads = cores == 0 ? 2 : (int)std::min(cores, 4u);
+	if (threads <= 1 || count < minimum) {
+		body(0, count);
+		return;
+	}
+	std::thread workers[4];
+	int chunk = (count + threads - 1) / threads;
+	for (int t = 1; t < threads; t++) {
+		int begin = t * chunk;
+		int end = std::min(count, begin + chunk);
+		if (begin < end)
+			workers[t] = std::thread(body, begin, end);
+	}
+	body(0, std::min(count, chunk));
+	for (int t = 1; t < threads; t++) {
+		if (workers[t].joinable())
+			workers[t].join();
+	}
+}
+
+
 inline void
 clear_rows(uint32_t* dst, int dstWidth, int stride, int fromRow, int toRow)
 {
@@ -83,22 +111,28 @@ lerp_pixel(uint32_t a, uint32_t b, int t /* 0..256 */)
 }
 
 
-/* Bilinear resample of src (sw x sh) into the rectangle at dst. 'sharpness'
-   > 1 makes it sharp bilinear: pixels keep a flat centre of that scale. */
+}	// namespace
+
+
 void
-resample(const uint32_t* src, int sw, int sh, uint32_t* dst, int stride,
-	int rx, int ry, int rw, int rh, bool sharp)
+ResampleMap::Build(int srcWidth, int srcHeight, int width, int height,
+	bool sharp)
 {
-	/* Per column / row: first source index and weight (0..256). */
-	std::vector<int> colIndex(rw), colWeight(rw), rowIndex(rh), rowWeight(rh);
-	double scaleX = (double)rw / sw;
-	double scaleY = (double)rh / sh;
+	fSrcWidth = srcWidth;
+	fSrcHeight = srcHeight;
+	fWidth = width;
+	fHeight = height;
+	fSharp = sharp;
+	fColIndex.resize(width);
+	fColWeight.resize(width);
+	fRowIndex.resize(height);
+	fRowWeight.resize(height);
 	for (int pass = 0; pass < 2; pass++) {
-		int count = pass == 0 ? rw : rh;
-		int size = pass == 0 ? sw : sh;
-		double scale = pass == 0 ? scaleX : scaleY;
-		std::vector<int>& index = pass == 0 ? colIndex : rowIndex;
-		std::vector<int>& weight = pass == 0 ? colWeight : rowWeight;
+		int count = pass == 0 ? width : height;
+		int size = pass == 0 ? srcWidth : srcHeight;
+		double scale = (double)count / size;
+		std::vector<int>& index = pass == 0 ? fColIndex : fRowIndex;
+		std::vector<int>& weight = pass == 0 ? fColWeight : fRowWeight;
 		for (int i = 0; i < count; i++) {
 			double texel = (i + 0.5) / scale;
 			double pos;
@@ -127,23 +161,55 @@ resample(const uint32_t* src, int sw, int sh, uint32_t* dst, int stride,
 			weight[i] = (int)(t * 256.0 + 0.5);
 		}
 	}
+}
 
-	parallel_rows(rh, [&](int begin, int end) {
-		for (int y = begin; y < end; y++) {
-			int sy = rowIndex[y];
-			int wy = rowWeight[y];
-			const uint32_t* r0 = src + (size_t)sy * sw;
-			const uint32_t* r1 = sy + 1 < sh ? r0 + sw : r0;
-			uint32_t* out = dst + (size_t)(ry + y) * stride + rx;
-			for (int x = 0; x < rw; x++) {
-				int sx = colIndex[x];
-				int wx = colWeight[x];
-				int sx1 = sx + 1 < sw ? sx + 1 : sx;
-				uint32_t top = lerp_pixel(r0[sx], r0[sx1], wx);
-				uint32_t bottom = lerp_pixel(r1[sx], r1[sx1], wx);
-				out[x] = lerp_pixel(top, bottom, wy);
-			}
+
+bool
+ResampleMap::Matches(int srcWidth, int srcHeight, int width, int height,
+	bool sharp) const
+{
+	return fSrcWidth == srcWidth && fSrcHeight == srcHeight && fWidth == width
+		&& fHeight == height && fSharp == sharp;
+}
+
+
+void
+ResampleMap::Apply(const uint32_t* src, uint32_t* dst, int stride, int x0,
+	int x1, int y0, int y1) const
+{
+	const int sw = fSrcWidth;
+	const int sh = fSrcHeight;
+	for (int y = y0; y < y1; y++) {
+		int sy = fRowIndex[y];
+		int wy = fRowWeight[y];
+		const uint32_t* r0 = src + (size_t)sy * sw;
+		const uint32_t* r1 = sy + 1 < sh ? r0 + sw : r0;
+		uint32_t* out = dst + (size_t)y * stride;
+		for (int x = x0; x < x1; x++) {
+			int sx = fColIndex[x];
+			int wx = fColWeight[x];
+			int sx1 = sx + 1 < sw ? sx + 1 : sx;
+			uint32_t top = lerp_pixel(r0[sx], r0[sx1], wx);
+			uint32_t bottom = lerp_pixel(r1[sx], r1[sx1], wx);
+			out[x] = lerp_pixel(top, bottom, wy);
 		}
+	}
+}
+
+
+namespace {
+
+/* Bilinear resample of src (sw x sh) into the rectangle at dst. 'sharp'
+   makes it sharp bilinear: pixels keep a flat centre. */
+void
+resample(const uint32_t* src, int sw, int sh, uint32_t* dst, int stride,
+	int rx, int ry, int rw, int rh, bool sharp)
+{
+	ResampleMap map;
+	map.Build(sw, sh, rw, rh, sharp);
+	uint32_t* origin = dst + (size_t)ry * stride + rx;
+	parallel_rows(rh, [&](int begin, int end) {
+		map.Apply(src, origin, stride, 0, rw, begin, end);
 	});
 }
 
@@ -189,12 +255,7 @@ const float kXbrScale = 3.0f;
 const float kEqThreshold = 15.0f;
 const float kLv2Coefficient = 2.0f;
 
-struct SubpixelWeights {
-	float	f45i[4];
-	float	f45[4];
-	float	f30[4];
-	float	f60[4];
-};
+typedef XbrWeights SubpixelWeights;
 
 
 inline float
@@ -270,6 +331,132 @@ to_pixel(const Rgb& c)
 	return 0xff000000u | ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
 }
 
+
+inline float
+luma_of(uint32_t c)
+{
+	/* As in the shader: dot(rgb / 255, (14.352, 28.176, 5.472)). */
+	return ((c >> 16) & 0xff) / 255.0f * 14.352f
+		+ ((c >> 8) & 0xff) / 255.0f * 28.176f
+		+ (c & 0xff) / 255.0f * 5.472f;
+}
+
+
+/* xBR-lv2 for the input pixels in [x0, x1) x [y0, y1). Each input pixel
+   writes its own factor x factor block of out (width * factor wide). */
+void
+xbr_rect(const uint32_t* in, const float* luma, int width, int height,
+	int factor, const SubpixelWeights* weights, uint32_t* out, int x0, int x1,
+	int y0, int y1)
+{
+	const int outWidth = width * factor;
+	for (int y = y0; y < y1; y++) {
+		int ym2 = std::max(y - 2, 0), ym1 = std::max(y - 1, 0);
+		int yp1 = std::min(y + 1, height - 1), yp2 = std::min(y + 2, height - 1);
+		for (int x = x0; x < x1; x++) {
+			int xm2 = std::max(x - 2, 0), xm1 = std::max(x - 1, 0);
+			int xp1 = std::min(x + 1, width - 1);
+			int xp2 = std::min(x + 2, width - 1);
+#define L(px, py) luma[(size_t)(py) * width + (px)]
+#define P(px, py) in[(size_t)(py) * width + (px)]
+			float A1 = L(xm1, ym2), B1 = L(x, ym2), C1 = L(xp1, ym2);
+			float A = L(xm1, ym1), B = L(x, ym1), C = L(xp1, ym1);
+			float D = L(xm1, y), E = L(x, y), F = L(xp1, y);
+			float G = L(xm1, yp1), H = L(x, yp1), I = L(xp1, yp1);
+			float G5 = L(xm1, yp2), H5 = L(x, yp2), I5 = L(xp1, yp2);
+			float A0 = L(xm2, ym1), D0 = L(xm2, y), G0 = L(xm2, yp1);
+			float C4 = L(xp2, ym1), F4 = L(xp2, y), I4 = L(xp2, yp1);
+
+			uint32_t* block = out + (size_t)y * factor * outWidth
+				+ (size_t)x * factor;
+			uint32_t centre = P(x, y);
+
+			/* The four rotations (bottom-right, top-right, top-left,
+			   bottom-left), as the vec4 components of the shader. */
+			const float b[4] = { B, D, H, F };
+			const float c[4] = { C, A, G, I };
+			const float d[4] = { D, H, F, B };
+			const float f[4] = { F, B, D, H };
+			const float g[4] = { G, I, C, A };
+			const float h[4] = { H, F, B, D };
+			const float i[4] = { I, C, A, G };
+			const float i4[4] = { I4, C1, A0, G5 };
+			const float i5[4] = { I5, C4, A1, G0 };
+			const float h5[4] = { H5, F4, B1, D0 };
+			const float f4[4] = { F4, B1, D0, H5 };
+
+			bool edri[4], edr[4], edrL[4], edrU[4], px[4];
+			bool any = false;
+			for (int k = 0; k < 4; k++) {
+				auto df = [](float p, float q) { return fabsf(p - q); };
+				auto eq = [&](float p, float q) { return df(p, q) <= kEqThreshold; };
+				bool irlv0 = E != f[k] && E != h[k];
+				edri[k] = edr[k] = edrL[k] = edrU[k] = false;
+				px[k] = df(E, h[k]) >= df(E, f[k]);
+				if (!irlv0)
+					continue;
+				/* CORNER_C */
+				float irlv1 = (float)(!eq(f[k], b[k]) && !eq(f[k], c[k]))
+					+ (float)(!eq(h[k], d[k]) && !eq(h[k], g[k]))
+					+ (float)eq(E, i[k]) * ((float)(!eq(f[k], f4[k]) && !eq(f[k], i4[k]))
+						+ (float)(!eq(h[k], h5[k]) && !eq(h[k], i5[k])))
+					+ (float)eq(E, g[k]) + (float)eq(E, c[k]);
+				bool irlv2l = E != g[k] && d[k] != g[k];
+				bool irlv2u = E != c[k] && b[k] != c[k];
+				float wd1 = df(E, c[k]) + df(E, g[k]) + df(i[k], h5[k])
+					+ df(i[k], f4[k]) + 4.0f * df(h[k], f[k]);
+				float wd2 = df(h[k], d[k]) + df(h[k], i5[k]) + df(f[k], i4[k])
+					+ df(f[k], b[k]) + 4.0f * df(E, i[k]);
+				edri[k] = wd2 >= wd1;
+				edr[k] = wd2 >= wd1 + 0.1f && irlv1 >= 0.5f;
+				edrL[k] = edr[k] && irlv2l
+					&& df(h[k], c[k]) >= kLv2Coefficient * df(f[k], g[k]);
+				edrU[k] = edr[k] && irlv2u
+					&& df(f[k], g[k]) >= kLv2Coefficient * df(h[k], c[k]);
+				any = true;
+			}
+
+			if (!any) {
+				for (int sy = 0; sy < factor; sy++) {
+					uint32_t* row = block + (size_t)sy * outWidth;
+					for (int sx = 0; sx < factor; sx++)
+						row[sx] = centre;
+				}
+				continue;
+			}
+
+			Rgb cE = to_rgb(centre);
+			Rgb cB = to_rgb(P(x, ym1)), cD = to_rgb(P(xm1, y));
+			Rgb cF = to_rgb(P(xp1, y)), cH = to_rgb(P(x, yp1));
+			Rgb pick0 = px[0] ? cF : cH;
+			Rgb pick1 = px[1] ? cB : cF;
+			Rgb pick2 = px[2] ? cD : cB;
+			Rgb pick3 = px[3] ? cH : cD;
+#undef L
+#undef P
+			for (int sy = 0; sy < factor; sy++) {
+				uint32_t* row = block + (size_t)sy * outWidth;
+				for (int sx = 0; sx < factor; sx++) {
+					const SubpixelWeights& w = weights[(size_t)sy * factor + sx];
+					float m[4];
+					for (int k = 0; k < 4; k++) {
+						float v30 = edrL[k] ? w.f30[k] : 0.0f;
+						float v60 = edrU[k] ? w.f60[k] : 0.0f;
+						float v45 = edr[k] ? w.f45[k] : 0.0f;
+						float v45i = edri[k] ? w.f45i[k] : 0.0f;
+						m[k] = std::max(std::max(v30, v60), std::max(v45, v45i));
+					}
+					Rgb res1 = mix(mix(cE, pick0, m[0]), pick2, m[2]);
+					Rgb res2 = mix(mix(cE, pick1, m[1]), pick3, m[3]);
+					Rgb res = color_distance(cE, res2) >= color_distance(cE, res1)
+						? res2 : res1;
+					row[sx] = to_pixel(res);
+				}
+			}
+		}
+	}
+}
+
 }	// namespace
 
 
@@ -279,126 +466,16 @@ XbrScaler::Scale(const uint32_t* in, int width, int height, int factor,
 {
 	if (factor < 1)
 		factor = 1;
-	const int outWidth = width * factor;
-
-	/* Luma as in the shader: dot(rgb / 255, (14.352, 28.176, 5.472)). */
 	std::vector<float> luma((size_t)width * height);
-	for (size_t i = 0; i < luma.size(); i++) {
-		uint32_t c = in[i];
-		luma[i] = ((c >> 16) & 0xff) / 255.0f * 14.352f
-			+ ((c >> 8) & 0xff) / 255.0f * 28.176f
-			+ (c & 0xff) / 255.0f * 5.472f;
-	}
+	for (size_t i = 0; i < luma.size(); i++)
+		luma[i] = luma_of(in[i]);
 
 	std::vector<SubpixelWeights> weights;
 	subpixel_weights(factor, weights);
 
 	parallel_rows(height, [&](int begin, int end) {
-		for (int y = begin; y < end; y++) {
-			int ym2 = std::max(y - 2, 0), ym1 = std::max(y - 1, 0);
-			int yp1 = std::min(y + 1, height - 1), yp2 = std::min(y + 2, height - 1);
-			for (int x = 0; x < width; x++) {
-				int xm2 = std::max(x - 2, 0), xm1 = std::max(x - 1, 0);
-				int xp1 = std::min(x + 1, width - 1);
-				int xp2 = std::min(x + 2, width - 1);
-#define L(px, py) luma[(size_t)(py) * width + (px)]
-#define P(px, py) in[(size_t)(py) * width + (px)]
-				float A1 = L(xm1, ym2), B1 = L(x, ym2), C1 = L(xp1, ym2);
-				float A = L(xm1, ym1), B = L(x, ym1), C = L(xp1, ym1);
-				float D = L(xm1, y), E = L(x, y), F = L(xp1, y);
-				float G = L(xm1, yp1), H = L(x, yp1), I = L(xp1, yp1);
-				float G5 = L(xm1, yp2), H5 = L(x, yp2), I5 = L(xp1, yp2);
-				float A0 = L(xm2, ym1), D0 = L(xm2, y), G0 = L(xm2, yp1);
-				float C4 = L(xp2, ym1), F4 = L(xp2, y), I4 = L(xp2, yp1);
-
-				uint32_t* block = out + (size_t)y * factor * outWidth
-					+ (size_t)x * factor;
-				uint32_t centre = P(x, y);
-
-				/* The four rotations (bottom-right, top-right, top-left,
-				   bottom-left), as the vec4 components of the shader. */
-				const float b[4] = { B, D, H, F };
-				const float c[4] = { C, A, G, I };
-				const float d[4] = { D, H, F, B };
-				const float f[4] = { F, B, D, H };
-				const float g[4] = { G, I, C, A };
-				const float h[4] = { H, F, B, D };
-				const float i[4] = { I, C, A, G };
-				const float i4[4] = { I4, C1, A0, G5 };
-				const float i5[4] = { I5, C4, A1, G0 };
-				const float h5[4] = { H5, F4, B1, D0 };
-				const float f4[4] = { F4, B1, D0, H5 };
-
-				bool edri[4], edr[4], edrL[4], edrU[4], px[4];
-				bool any = false;
-				for (int k = 0; k < 4; k++) {
-					auto df = [](float p, float q) { return fabsf(p - q); };
-					auto eq = [&](float p, float q) { return df(p, q) <= kEqThreshold; };
-					bool irlv0 = E != f[k] && E != h[k];
-					edri[k] = edr[k] = edrL[k] = edrU[k] = false;
-					px[k] = df(E, h[k]) >= df(E, f[k]);
-					if (!irlv0)
-						continue;
-					/* CORNER_C */
-					float irlv1 = (float)(!eq(f[k], b[k]) && !eq(f[k], c[k]))
-						+ (float)(!eq(h[k], d[k]) && !eq(h[k], g[k]))
-						+ (float)eq(E, i[k]) * ((float)(!eq(f[k], f4[k]) && !eq(f[k], i4[k]))
-							+ (float)(!eq(h[k], h5[k]) && !eq(h[k], i5[k])))
-						+ (float)eq(E, g[k]) + (float)eq(E, c[k]);
-					bool irlv2l = E != g[k] && d[k] != g[k];
-					bool irlv2u = E != c[k] && b[k] != c[k];
-					float wd1 = df(E, c[k]) + df(E, g[k]) + df(i[k], h5[k])
-						+ df(i[k], f4[k]) + 4.0f * df(h[k], f[k]);
-					float wd2 = df(h[k], d[k]) + df(h[k], i5[k]) + df(f[k], i4[k])
-						+ df(f[k], b[k]) + 4.0f * df(E, i[k]);
-					edri[k] = wd2 >= wd1;
-					edr[k] = wd2 >= wd1 + 0.1f && irlv1 >= 0.5f;
-					edrL[k] = edr[k] && irlv2l
-						&& df(h[k], c[k]) >= kLv2Coefficient * df(f[k], g[k]);
-					edrU[k] = edr[k] && irlv2u
-						&& df(f[k], g[k]) >= kLv2Coefficient * df(h[k], c[k]);
-					any = true;
-				}
-
-				if (!any) {
-					for (int sy = 0; sy < factor; sy++) {
-						uint32_t* row = block + (size_t)sy * outWidth;
-						for (int sx = 0; sx < factor; sx++)
-							row[sx] = centre;
-					}
-					continue;
-				}
-
-				Rgb cE = to_rgb(centre);
-				Rgb cB = to_rgb(P(x, ym1)), cD = to_rgb(P(xm1, y));
-				Rgb cF = to_rgb(P(xp1, y)), cH = to_rgb(P(x, yp1));
-				Rgb pick0 = px[0] ? cF : cH;
-				Rgb pick1 = px[1] ? cB : cF;
-				Rgb pick2 = px[2] ? cD : cB;
-				Rgb pick3 = px[3] ? cH : cD;
-#undef L
-#undef P
-				for (int sy = 0; sy < factor; sy++) {
-					uint32_t* row = block + (size_t)sy * outWidth;
-					for (int sx = 0; sx < factor; sx++) {
-						const SubpixelWeights& w = weights[(size_t)sy * factor + sx];
-						float m[4];
-						for (int k = 0; k < 4; k++) {
-							float v30 = edrL[k] ? w.f30[k] : 0.0f;
-							float v60 = edrU[k] ? w.f60[k] : 0.0f;
-							float v45 = edr[k] ? w.f45[k] : 0.0f;
-							float v45i = edri[k] ? w.f45i[k] : 0.0f;
-							m[k] = std::max(std::max(v30, v60), std::max(v45, v45i));
-						}
-						Rgb res1 = mix(mix(cE, pick0, m[0]), pick2, m[2]);
-						Rgb res2 = mix(mix(cE, pick1, m[1]), pick3, m[3]);
-						Rgb res = color_distance(cE, res2) >= color_distance(cE, res1)
-							? res2 : res1;
-						row[sx] = to_pixel(res);
-					}
-				}
-			}
-		}
+		xbr_rect(in, luma.data(), width, height, factor, weights.data(), out,
+			0, width, begin, end);
 	});
 }
 
@@ -492,6 +569,14 @@ SharpScaler::Process(const uint32_t* src, int srcWidth, int srcHeight,
 }
 
 
+namespace {
+
+/* Art pixels per side of a cache tile. */
+const int kTile = 16;
+
+}	// namespace
+
+
 void
 XbrScaler::Process(const uint32_t* src, int srcWidth, int srcHeight,
 	int sourceFactor, uint32_t* dst, int dstWidth, int dstHeight,
@@ -508,22 +593,186 @@ XbrScaler::Process(const uint32_t* src, int srcWidth, int srcHeight,
 	int factor = (int)ceil((double)rw / width - 1e-6);
 	factor = std::min(std::max(factor, 1), 6);
 	if (factor == 1) {
+		/* Output not larger than the art: nothing for xBR to do. */
+		fValid = false;
+		fLastDirty = 0;
 		resample(image, width, height, dst, dstStride, rx, ry, rw, rh, true);
 		return;
 	}
-	fScaled.resize((size_t)width * factor * height * factor);
-	Scale(image, width, height, factor, fScaled.data());
 
-	int sw = width * factor;
-	int sh = height * factor;
-	if (sw == rw && sh == rh) {
-		for (int y = 0; y < rh; y++) {
-			memcpy(dst + (size_t)(ry + y) * dstStride + rx,
-				fScaled.data() + (size_t)y * sw, sizeof(uint32_t) * (size_t)rw);
-		}
-		return;
+	if (!fValid || width != fWidth || height != fHeight || factor != fFactor
+		|| rw != fOutWidth || rh != fOutHeight) {
+		fWidth = width;
+		fHeight = height;
+		fFactor = factor;
+		fOutWidth = rw;
+		fOutHeight = rh;
+		_Full(image);
+	} else
+		_Update(image);
+
+	for (int y = 0; y < rh; y++) {
+		memcpy(dst + (size_t)(ry + y) * dstStride + rx,
+			fOutput.data() + (size_t)y * rw, sizeof(uint32_t) * (size_t)rw);
 	}
-	resample(fScaled.data(), sw, sh, dst, dstStride, rx, ry, rw, rh, false);
+}
+
+
+void
+XbrScaler::_Full(const uint32_t* image)
+{
+	const int width = fWidth;
+	const int height = fHeight;
+	const int factor = fFactor;
+	const int scaledWidth = width * factor;
+	const int scaledHeight = height * factor;
+
+	fPrevious.assign(image, image + (size_t)width * height);
+	fLuma.resize((size_t)width * height);
+	for (size_t i = 0; i < fLuma.size(); i++)
+		fLuma[i] = luma_of(image[i]);
+	subpixel_weights(factor, fWeights);
+
+	fScaled.resize((size_t)scaledWidth * scaledHeight);
+	parallel_rows(height, [&](int begin, int end) {
+		xbr_rect(image, fLuma.data(), width, height, factor, fWeights.data(),
+			fScaled.data(), 0, width, begin, end);
+	});
+
+	if (!fMap.Matches(scaledWidth, scaledHeight, fOutWidth, fOutHeight, false))
+		fMap.Build(scaledWidth, scaledHeight, fOutWidth, fOutHeight, false);
+	fOutput.resize((size_t)fOutWidth * fOutHeight);
+	parallel_rows(fOutHeight, [&](int begin, int end) {
+		fMap.Apply(fScaled.data(), fOutput.data(), fOutWidth, 0, fOutWidth,
+			begin, end);
+	});
+
+	/* Output columns / rows belong to the tile of their first source
+	   pixel. */
+	fTilesX = (width + kTile - 1) / kTile;
+	fTilesY = (height + kTile - 1) / kTile;
+	fOutColumn.resize(fTilesX + 1);
+	fOutRow.resize(fTilesY + 1);
+	int x = 0;
+	for (int tx = 0; tx < fTilesX; tx++) {
+		while (x < fOutWidth && fMap.ColumnSource(x) < tx * kTile * factor)
+			x++;
+		fOutColumn[tx] = x;
+	}
+	fOutColumn[fTilesX] = fOutWidth;
+	int y = 0;
+	for (int ty = 0; ty < fTilesY; ty++) {
+		while (y < fOutHeight && fMap.RowSource(y) < ty * kTile * factor)
+			y++;
+		fOutRow[ty] = y;
+	}
+	fOutRow[fTilesY] = fOutHeight;
+
+	fDirty.assign((size_t)fTilesX * fTilesY, 0);
+	fLastDirty = fTilesX * fTilesY;
+	fValid = true;
+}
+
+
+void
+XbrScaler::_Update(const uint32_t* image)
+{
+	const int width = fWidth;
+	const int height = fHeight;
+	const int factor = fFactor;
+	const int tilesX = fTilesX;
+	const int tilesY = fTilesY;
+	std::fill(fDirty.begin(), fDirty.end(), 0);
+
+	/* Find the changed pixels per tile. xBR reads two pixels around each
+	   input pixel, so everything within two pixels of a change is filtered
+	   again. */
+	for (int ty = 0; ty < tilesY; ty++) {
+		int y0 = ty * kTile;
+		int y1 = std::min(height, y0 + kTile);
+		for (int tx = 0; tx < tilesX; tx++) {
+			int x0 = tx * kTile;
+			int x1 = std::min(width, x0 + kTile);
+			int minX = x1, maxX = -1, minY = y1, maxY = -1;
+			for (int y = y0; y < y1; y++) {
+				const uint32_t* now = image + (size_t)y * width;
+				const uint32_t* before = fPrevious.data() + (size_t)y * width;
+				if (memcmp(now + x0, before + x0,
+						sizeof(uint32_t) * (size_t)(x1 - x0)) == 0)
+					continue;
+				for (int x = x0; x < x1; x++) {
+					if (now[x] != before[x]) {
+						minX = std::min(minX, x);
+						maxX = std::max(maxX, x);
+					}
+				}
+				minY = std::min(minY, y);
+				maxY = std::max(maxY, y);
+			}
+			if (maxX < 0)
+				continue;
+
+			for (int y = minY; y <= maxY; y++) {
+				size_t row = (size_t)y * width;
+				for (int x = minX; x <= maxX; x++) {
+					fPrevious[row + x] = image[row + x];
+					fLuma[row + x] = luma_of(image[row + x]);
+				}
+			}
+			int fromX = std::max(minX - 2, 0) / kTile;
+			int toX = std::min(maxX + 2, width - 1) / kTile;
+			int fromY = std::max(minY - 2, 0) / kTile;
+			int toY = std::min(maxY + 2, height - 1) / kTile;
+			for (int dy = fromY; dy <= toY; dy++) {
+				for (int dx = fromX; dx <= toX; dx++)
+					fDirty[(size_t)dy * tilesX + dx] = 1;
+			}
+		}
+	}
+
+	fDirtyList.clear();
+	for (int i = 0; i < tilesX * tilesY; i++) {
+		if (fDirty[i])
+			fDirtyList.push_back(i);
+	}
+	fLastDirty = (int)fDirtyList.size();
+	if (fDirtyList.empty())
+		return;
+
+	/* 1: xBR for the dirty tiles (each writes its own blocks). */
+	parallel_items((int)fDirtyList.size(), 8, [&](int begin, int end) {
+		for (int i = begin; i < end; i++) {
+			int tx = fDirtyList[i] % tilesX;
+			int ty = fDirtyList[i] / tilesX;
+			xbr_rect(image, fLuma.data(), width, height, factor,
+				fWeights.data(), fScaled.data(), tx * kTile,
+				std::min(width, (tx + 1) * kTile), ty * kTile,
+				std::min(height, (ty + 1) * kTile));
+		}
+	});
+
+	/* 2: resample the output areas that read a dirty tile. An output area
+	   reads its own tile and the tiles to the right and below. */
+	fDirtyList.clear();
+	for (int ty = 0; ty < tilesY; ty++) {
+		for (int tx = 0; tx < tilesX; tx++) {
+			bool right = tx + 1 < tilesX;
+			bool below = ty + 1 < tilesY;
+			const uint8_t* d = fDirty.data() + (size_t)ty * tilesX + tx;
+			if (d[0] || (right && d[1]) || (below && d[tilesX])
+				|| (right && below && d[tilesX + 1]))
+				fDirtyList.push_back(ty * tilesX + tx);
+		}
+	}
+	parallel_items((int)fDirtyList.size(), 8, [&](int begin, int end) {
+		for (int i = begin; i < end; i++) {
+			int tx = fDirtyList[i] % tilesX;
+			int ty = fDirtyList[i] / tilesX;
+			fMap.Apply(fScaled.data(), fOutput.data(), fOutWidth,
+				fOutColumn[tx], fOutColumn[tx + 1], fOutRow[ty],
+				fOutRow[ty + 1]);
+		}
+	});
 }
 
 
