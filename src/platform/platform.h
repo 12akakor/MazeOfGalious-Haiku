@@ -44,6 +44,21 @@ void plat_set_scaler(const char* name);
 void plat_next_scaler(void);
 const char* plat_scaler_name(void);
 
+/* Timing display (F4): filter and drawing time per frame, frames per
+   second. */
+void plat_toggle_stats(void);
+
+/* Wait for the screen refresh before drawing (less tearing). Only works
+   with graphics drivers that report the refresh; ignored otherwise. */
+void plat_set_vsync(bool enabled);
+bool plat_vsync(void);
+
+/* Windowed placement, remembered between runs. plat_set_saved_window() is
+   called before plat_init(); plat_get_window() returns false when there is
+   no window. */
+void plat_set_saved_window(int x, int y, int width, int height);
+bool plat_get_window(int* x, int* y, int* width, int* height);
+
 /* 2 when the current graphics set is 320x200 art stored with doubled pixels
    (the "original" set), 1 otherwise. Used by the scaler. */
 void plat_set_source_factor(int factor);

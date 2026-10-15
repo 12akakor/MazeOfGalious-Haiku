@@ -17,6 +17,7 @@
 #include <Bitmap.h>
 #include <Directory.h>
 #include <Entry.h>
+#include <Font.h>
 #include <FindDirectory.h>
 #include <Locker.h>
 #include <MediaDefs.h>
@@ -29,6 +30,7 @@
 #include <Window.h>
 
 #include <atomic>
+#include <math.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,6 +92,8 @@ int sHeight = 0;
 bool sFullscreen = false;
 bool sCursorHidden = false;
 BRect sWindowedFrame;
+BRect sSavedFrame;
+bool sHaveSavedFrame = false;
 char sTitle[128] = "";
 uint32* sConverted = NULL;
 
@@ -100,6 +104,27 @@ BBitmap* sFront = NULL;
 BBitmap* sBack = NULL;
 
 uint8 sRawKeys[16];
+
+/* Vertical sync: wanted (setting) and what the driver supports
+   (0 unknown, 1 works, -1 not supported). */
+std::atomic<bool> sVsyncWanted(true);
+std::atomic<int> sVsyncState(0);
+
+/* Timing display (F4). The counters are protected by sFrameLock. */
+std::atomic<bool> sShowStats(false);
+struct Stats {
+	bigtime_t	start;
+	bigtime_t	filterSum;
+	bigtime_t	filterMax;
+	int			frames;
+	bigtime_t	drawSum;
+	bigtime_t	drawMax;
+	int			draws;
+	int			dirtyTiles;
+	int			tiles;
+};
+Stats sStats;
+char sStatsText[200] = "";
 
 BLocker sAudioLock("mog audio");
 BSoundPlayer* sPlayer = NULL;
@@ -132,15 +157,24 @@ public:
 		sViewHeight = frame.IntegerHeight() + 1;
 	}
 
+	virtual ~MoGView()
+	{
+		delete fScreen;
+	}
+
 	virtual void AttachedToWindow()
 	{
 		MakeFocus(true);
+		fScreen = new BScreen(Window());
 	}
 
 	virtual void Draw(BRect /*updateRect*/)
 	{
+		_WaitForRetrace();
+
 		BRect bounds = Bounds();
 		sFrameLock.Lock();
+		bigtime_t start = system_time();
 		if (sFront == NULL) {
 			SetHighColor(0, 0, 0);
 			FillRect(bounds);
@@ -150,9 +184,16 @@ public:
 			/* Size changed, the next frame will match again. */
 			DrawBitmap(sFront, sFront->Bounds(), bounds);
 		}
+		if (sShowStats)
+			_DrawStats();
 		/* Wait until the app_server has used the bitmap before the game
 		   thread may write into it again. */
 		Sync();
+		bigtime_t time = system_time() - start;
+		sStats.drawSum += time;
+		if (time > sStats.drawMax)
+			sStats.drawMax = time;
+		sStats.draws++;
 		sFrameLock.Unlock();
 	}
 
@@ -167,6 +208,43 @@ public:
 	   they do not trigger anything else. */
 	virtual void KeyDown(const char* /*bytes*/, int32 /*numBytes*/) {}
 	virtual void KeyUp(const char* /*bytes*/, int32 /*numBytes*/) {}
+
+private:
+	void _WaitForRetrace()
+	{
+		if (!sVsyncWanted || sVsyncState < 0 || fScreen == NULL)
+			return;
+		/* At most a little longer than one refresh at 50 Hz. */
+		status_t status = fScreen->WaitForRetrace(25000);
+		if (status == B_OK) {
+			sVsyncState = 1;
+			fTimeouts = 0;
+		} else if (status == B_TIMED_OUT) {
+			if (++fTimeouts >= 3)
+				sVsyncState = -1;
+		} else
+			sVsyncState = -1;
+	}
+
+	void _DrawStats()
+	{
+		BFont font(be_fixed_font);
+		font.SetSize(13);
+		SetFont(&font);
+		font_height height;
+		font.GetHeight(&height);
+		float width = StringWidth(sStatsText);
+		float lineHeight = ceilf(height.ascent + height.descent);
+		SetDrawingMode(B_OP_COPY);
+		SetHighColor(0, 0, 0);
+		FillRect(BRect(4, 4, 4 + width + 10, 4 + lineHeight + 6));
+		SetHighColor(255, 220, 0);
+		SetLowColor(0, 0, 0);
+		DrawString(sStatsText, BPoint(9, 7 + ceilf(height.ascent)));
+	}
+
+	BScreen*	fScreen = NULL;
+	int			fTimeouts = 0;
 };
 
 
@@ -366,11 +444,24 @@ main(int argc, char** argv)
 static BRect
 windowed_frame(void)
 {
+	BScreen screen;
+	BRect screenFrame = screen.Frame();
+	if (sHaveSavedFrame) {
+		/* Saved placement, if it is still usable on this screen. */
+		BRect frame = sSavedFrame;
+		if (frame.Width() + 1 >= sWidth / 2 && frame.Height() + 1 >= sHeight / 2
+			&& frame.Width() <= screenFrame.Width()
+			&& frame.Height() <= screenFrame.Height()
+			&& frame.top >= screenFrame.top
+			&& frame.top <= screenFrame.bottom - 40
+			&& frame.left <= screenFrame.right - 80
+			&& frame.right >= screenFrame.left + 80)
+			return frame;
+	}
+
 	/* As large as fits comfortably on the screen (90% of the width, 85% of
 	   the height), keeping 16:10; at least the game's own size. The
 	   scaler fills any window size. */
-	BScreen screen;
-	BRect screenFrame = screen.Frame();
 	float maxWidth = (screenFrame.Width() + 1) * 0.90f;
 	float maxHeight = (screenFrame.Height() + 1) * 0.85f;
 	float width = maxWidth;
@@ -444,12 +535,54 @@ plat_name(void)
 }
 
 
+/* Called with sFrameLock held, after each frame. */
+static void
+update_stats(Scaler* scaler, bigtime_t filterTime, bigtime_t now)
+{
+	Stats& st = sStats;
+	if (st.start == 0)
+		st.start = now;
+	st.filterSum += filterTime;
+	if (filterTime > st.filterMax)
+		st.filterMax = filterTime;
+	st.frames++;
+	if (strcmp(scaler->Name(), "xbr") == 0) {
+		XbrScaler* xbr = static_cast<XbrScaler*>(scaler);
+		st.dirtyTiles += xbr->LastDirtyTiles();
+		st.tiles += xbr->TileCount();
+	}
+	if (now - st.start < 1000000)
+		return;
+
+	double seconds = (now - st.start) / 1000000.0;
+	char tiles[32] = "";
+	if (st.tiles > 0) {
+		snprintf(tiles, sizeof(tiles), " | redrawn %d%%",
+			(int)(100.0 * st.dirtyTiles / st.tiles + 0.5));
+	}
+	const char* vsync = !sVsyncWanted ? "off"
+		: (sVsyncState > 0 ? "on" : (sVsyncState < 0 ? "not supported" : "?"));
+	snprintf(sStatsText, sizeof(sStatsText),
+		"%s | filter %.1f ms (max %.1f)%s | draw %.1f ms (max %.1f) | "
+		"%.0f fps | vsync %s",
+		scaler->Name(), st.filterSum / 1000.0 / st.frames,
+		st.filterMax / 1000.0, tiles,
+		st.draws > 0 ? st.drawSum / 1000.0 / st.draws : 0.0,
+		st.drawMax / 1000.0, st.frames / seconds, vsync);
+	if (sShowStats)
+		printf("%s\n", sStatsText);
+	memset(&st, 0, sizeof(st));
+	st.start = now;
+}
+
+
 void
 plat_present(const uint8_t* pixels)
 {
 	if (sWindow == NULL)
 		return;
 
+	bigtime_t start = system_time();
 	plat_internal_convert(pixels, sConverted, sWidth * sHeight);
 
 	int width = sViewWidth;
@@ -468,14 +601,17 @@ plat_present(const uint8_t* pixels)
 		}
 	}
 
-	plat_internal_scaler()->Process(sConverted, sWidth, sHeight,
+	Scaler* scaler = plat_internal_scaler();
+	scaler->Process(sConverted, sWidth, sHeight,
 		plat_internal_source_factor(), (uint32_t*)sBack->Bits(),
 		width, height, (int)(sBack->BytesPerRow() / 4));
+	bigtime_t now = system_time();
 
 	sFrameLock.Lock();
 	BBitmap* swap = sFront;
 	sFront = sBack;
 	sBack = swap;
+	update_stats(scaler, now - start, now);
 	sFrameLock.Unlock();
 
 	if (!sRedrawPending.exchange(true))
@@ -536,6 +672,58 @@ bool
 plat_is_fullscreen(void)
 {
 	return sFullscreen;
+}
+
+
+void
+plat_toggle_stats(void)
+{
+	sShowStats = !sShowStats;
+	if (sShowStats)
+		printf("Timing display on (F4 to hide)\n");
+	if (sWindow != NULL && sWindow->Lock()) {
+		sView->Invalidate();
+		sWindow->Unlock();
+	}
+}
+
+
+void
+plat_set_vsync(bool enabled)
+{
+	sVsyncWanted = enabled;
+}
+
+
+bool
+plat_vsync(void)
+{
+	return sVsyncWanted;
+}
+
+
+void
+plat_set_saved_window(int x, int y, int width, int height)
+{
+	if (width < 1 || height < 1)
+		return;
+	sSavedFrame = BRect(x, y, x + width - 1, y + height - 1);
+	sHaveSavedFrame = true;
+}
+
+
+bool
+plat_get_window(int* x, int* y, int* width, int* height)
+{
+	if (sWindow == NULL || !sWindow->Lock())
+		return false;
+	BRect frame = sFullscreen ? sWindowedFrame : sWindow->Frame();
+	sWindow->Unlock();
+	*x = (int)frame.left;
+	*y = (int)frame.top;
+	*width = frame.IntegerWidth() + 1;
+	*height = frame.IntegerHeight() + 1;
+	return true;
 }
 
 
