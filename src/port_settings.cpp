@@ -1,13 +1,14 @@
 #include "port_settings.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "filehandling.h"
 #include "platform/platform.h"
 
 
-void port_settings_load(void)
+void port_settings_load(bool *fullscreen)
 {
 	FILE *fp=f1open("port.cfg","r",USERDATA);
 	char line[128];
@@ -20,6 +21,12 @@ void port_settings_load(void)
 		*value++=0;
 		value[strcspn(value,"\r\n ")]=0;
 		if (strcmp(line,"scaler")==0) plat_set_scaler(value);
+		if (strcmp(line,"vsync")==0) plat_set_vsync(atoi(value)!=0);
+		if (strcmp(line,"fullscreen")==0 && fullscreen!=NULL) *fullscreen=atoi(value)!=0;
+		if (strcmp(line,"window")==0) {
+			int x,y,w,h;
+			if (sscanf(value,"%d,%d,%d,%d",&x,&y,&w,&h)==4) plat_set_saved_window(x,y,w,h);
+		} /* if */ 
 	} /* while */ 
 	fclose(fp);
 } /* port_settings_load */ 
@@ -30,6 +37,11 @@ void port_settings_save(void)
 	FILE *fp=f1open("port.cfg","w",USERDATA);
 
 	if (fp==NULL) return;
+	int x,y,w,h;
+
 	fprintf(fp,"scaler=%s\n",plat_scaler_name());
+	fprintf(fp,"vsync=%d\n",plat_vsync() ? 1:0);
+	fprintf(fp,"fullscreen=%d\n",plat_is_fullscreen() ? 1:0);
+	if (plat_get_window(&x,&y,&w,&h)) fprintf(fp,"window=%d,%d,%d,%d\n",x,y,w,h);
 	fclose(fp);
 } /* port_settings_save */ 

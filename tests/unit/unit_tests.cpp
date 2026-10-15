@@ -8,9 +8,12 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <vector>
+
 #include "../../src/platform/audio_mixer.h"
 #include "../../src/platform/platform.h"
 #include "../../src/platform/platform_internal.h"
+#include "../../src/platform/resampler.h"
 #include "../../src/platform/video_scaler.h"
 #include "../../src/loadpcx.h"
 
@@ -64,16 +67,20 @@ test_wav_decoding(void)
 		snd_free((MogSound*)s);
 	}
 
-	/* 8 bit unsigned 22050: twice as many frames, 128 -> 0. */
-	unsigned char u8[3] = { 128, 255, 0 };
-	write_wav("/tmp/mog_t2.wav", 1, 22050, 8, u8, 3);
+	/* 8 bit unsigned 22050: twice as many frames, 128 -> 0, a constant
+	   level stays constant (away from the start and end). */
+	unsigned char u8[64];
+	memset(u8, 200, sizeof(u8));
+	write_wav("/tmp/mog_t2.wav", 1, 22050, 8, u8, sizeof(u8));
 	s = (MogSoundView*)snd_load("/tmp/mog_t2.wav");
 	CHECK(s != NULL);
 	if (s != NULL) {
-		CHECK(s->frames == 6);
-		CHECK(s->data[0] == 0);
-		CHECK(s->data[4] == 127 * 256);
-		CHECK(s->data[8] == -128 * 256);
+		CHECK(s->frames == 128);
+		bool flat = true;
+		for (int i = 40; i < 88; i++)
+			flat = flat && abs(s->data[i * 2] - 72 * 256) <= 1
+				&& s->data[i * 2] == s->data[i * 2 + 1];
+		CHECK(flat);
 		snd_free((MogSound*)s);
 	}
 
@@ -128,6 +135,73 @@ test_stream_matches_sound(const char* file)
 	free(buffer);
 	stream_close(stream);
 	snd_free((MogSound*)whole);
+}
+
+
+/* Signal to error ratio (dB) of a resampled sine against the exact sine. */
+static double
+sine_snr(int inRate, double frequency, bool linear)
+{
+	const int inFrames = inRate;	/* one second */
+	std::vector<int16_t> in((size_t)inFrames * 2);
+	for (int i = 0; i < inFrames; i++) {
+		double v = 16000.0 * sin(2.0 * M_PI * frequency * i / inRate);
+		in[i * 2] = in[i * 2 + 1] = (int16_t)lrint(v);
+	}
+	Resampler r;
+	r.Init(inRate, MIXER_RATE);
+	int64_t count = r.OutputFrames(inFrames);
+	std::vector<int16_t> padded(((size_t)r.Before() + inFrames + r.After()) * 2);
+	memcpy(&padded[(size_t)r.Before() * 2], in.data(), in.size() * 2);
+	double signal = 0.0, error = 0.0;
+	for (int64_t k = count / 4; k < count * 3 / 4; k++) {
+		int64_t index;
+		double fraction;
+		r.Position(k, &index, &fraction);
+		int16_t out[2];
+		if (linear) {
+			int a = in[index * 2], b = in[(index + 1) * 2];
+			out[0] = (int16_t)lrint(a + (b - a) * fraction);
+		} else
+			r.Frame(&padded[(size_t)index * 2], fraction, out);
+		double exact = 16000.0 * sin(2.0 * M_PI * frequency * k / MIXER_RATE);
+		signal += exact * exact;
+		error += (out[0] - exact) * (out[0] - exact);
+	}
+	return 10.0 * log10(signal / error);
+}
+
+
+static void
+test_resampler(void)
+{
+	Resampler same;
+	same.Init(44100, 44100);
+	CHECK(same.Passthrough() && same.Taps() == 1);
+	int16_t frame[2] = { 123, -456 }, out[2];
+	same.Frame(frame, 0.0, out);
+	CHECK(out[0] == 123 && out[1] == -456);
+
+	Resampler up;
+	up.Init(11025, 44100);
+	CHECK(up.OutputFrames(11025) == 44100);
+	int64_t index;
+	double fraction;
+	up.Position(5, &index, &fraction);
+	CHECK(index == 1 && fabs(fraction - 0.25) < 1e-9);
+
+	const struct { int rate; double frequency; double minimum; } cases[] = {
+		{ 11025, 1000.0, 70.0 }, { 11025, 4000.0, 60.0 },
+		{ 22050, 8000.0, 60.0 }, { 48000, 15000.0, 60.0 }
+	};
+	for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+		double sinc = sine_snr(cases[i].rate, cases[i].frequency, false);
+		double linear = sine_snr(cases[i].rate, cases[i].frequency, true);
+		printf("  resampler %5d Hz, %5.0f Hz sine: %.1f dB (linear %.1f dB)\n",
+			cases[i].rate, cases[i].frequency, sinc, linear);
+		CHECK(sinc >= cases[i].minimum);
+		CHECK(sinc > linear + 10.0);
+	}
 }
 
 
@@ -360,6 +434,50 @@ test_xbr(void)
 			CHECK(screen[540 * 1920 + 95] == 0);
 		}
 	}
+	/* The cache (only changed parts filtered again) gives exactly the same
+	   picture as filtering every frame completely. */
+	{
+		static uint32_t art[640 * 400];
+		uint32_t seed = 1;
+		for (int i = 0; i < 640 * 400; i++) {
+			seed = seed * 1103515245u + 12345u;
+			/* Blocks of 8x8 with a few colours, like tiles. */
+			int block = ((i % 640) / 8 + (i / 640 / 8) * 80) * 7;
+			art[i] = 0xff000000u | (uint32_t)((block * 0x3a5b7) & 0xc0c0c0)
+				| ((seed >> 28) == 0 ? 0x202020u : 0u);
+		}
+		const int sizes[][2] = { { 1728, 1080 }, { 1001, 627 } };
+		for (int n = 0; n < 2; n++) {
+			int dw = sizes[n][0], dh = sizes[n][1];
+			std::vector<uint32_t> a((size_t)dw * dh), b((size_t)dw * dh);
+			XbrScaler cached;
+			bool equal = true;
+			int partial = 0;
+			for (int f = 0; f < 12; f++) {
+				/* A moving sprite, and a full change in frame 6. */
+				for (int y = 0; y < 24; y++) {
+					for (int x = 0; x < 16; x++) {
+						int px = 37 + f * 9 + x, py = 101 + f * 5 + y;
+						art[py * 640 + px] = (x + y + f) % 3 == 0
+							? 0xffffffffu : 0xff20a040u;
+					}
+				}
+				if (f == 6) {
+					for (int i = 0; i < 640 * 400; i++)
+						art[i] ^= 0x00101010u;
+				}
+				XbrScaler fresh;
+				cached.Process(art, 640, 400, 1, a.data(), dw, dh, dw);
+				fresh.Process(art, 640, 400, 1, b.data(), dw, dh, dw);
+				equal = equal && a == b;
+				if (cached.LastDirtyTiles() < cached.TileCount())
+					partial++;
+			}
+			CHECK(equal);
+			CHECK(partial == 10);
+		}
+	}
+
 	CHECK(strcmp(scaler_for_name("unknown")->Name(), "xbr") == 0);
 	CHECK(strcmp(scaler_next(scaler_for_name("xbr"))->Name(), "nearest") == 0);
 	CHECK(strcmp(scaler_next(scaler_for_name("nearest"))->Name(), "sharp") == 0);
@@ -412,6 +530,7 @@ main(int argc, char** argv)
 	if (argc > 1)
 		sData = argv[1];
 	test_wav_decoding();
+	test_resampler();
 	test_stream_matches_sound("original/demon2.ogg");	/* 44100 */
 	test_stream_matches_sound("original/tomb1.ogg");	/* 11025 */
 	test_stream_matches_sound("original/bell.wav");		/* 22050 wav */

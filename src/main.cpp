@@ -74,6 +74,9 @@ int game_main(int argc, char** argv)
 	PlatEvent event;
 	bool quit = false;
 
+	// Port: saved settings first (scaler, window, full screen), the command
+	// line overrides them.
+	port_settings_load(&fullscreen);
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--window") == 0 || strcmp(argv[i], "-w") == 0)
 			fullscreen = false;
@@ -112,6 +115,12 @@ int game_main(int argc, char** argv)
 			// Alt+Enter: toggle full screen (upstream: also Apple+F on OS X)
 			if (event.key == MOGK_RETURN && (event.modifiers & PLAT_MOD_ALT) != 0) {
 				fullscreen = plat_set_fullscreen(!fullscreen);
+				port_settings_save();
+			}
+
+			// Port: F4 shows the timing of filter and drawing
+			if (event.key == MOGK_F4) {
+				plat_toggle_stats();
 			}
 
 			// Port: F3 cycles the scaling filter (xbr, nearest, sharp)
@@ -199,6 +208,7 @@ int game_main(int argc, char** argv)
 		plat_sleep_ms(1);
 	}
 
+	port_settings_save();
 	finalize_platform();
 
 	return 0;
@@ -213,8 +223,6 @@ static bool initialize_platform(void)
 		output_debug_message("Couldn't open a %ix%i window\n", SCREEN_X, SCREEN_Y);
 		return false;
 	}
-
-	port_settings_load();
 
 	Sound_initialization();
 

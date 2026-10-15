@@ -12,8 +12,8 @@ Based on the upstream nightly `mog-svn-20120228` (game code identical to
     make            # builds ./MazeOfGalious
     make run        # windowed
     make test       # unit tests + 1400-frame comparison with the reference
-    make package    # mazeofgalious-0.63.2-2-x86_64.hpkg and
-                    # mazeofgalious_extras-0.63.2-2-any.hpkg (extra sets)
+    make package    # mazeofgalious-0.63.3-1-x86_64.hpkg and
+                    # mazeofgalious_extras-0.63.3-1-any.hpkg (extra sets)
 
 Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 `mimeset`, `package`; on Haiku: `pkgman install haiku_devel` if missing).
@@ -21,16 +21,26 @@ Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 ## Keys
 
 Cursor keys move/jump/climb, Space attacks, M fires the secondary weapon,
-F1 item screen, F2 pause, F3 scaling filter (xBR, nearest, sharp), F10/9 graphic set, F11/0 sound set, PgUp/PgDn zoom,
+F1 item screen, F2 pause, F3 scaling filter (xBR, nearest, sharp), F4 timing
+display, F10/9 graphic set, F11/0 sound set, PgUp/PgDn zoom,
 Esc title screen, Alt+Enter full screen, F12 quit. Keys can be redefined on
-the title screen (K). The game starts in a window; command line
-`--fullscreen` starts in full screen.
+the title screen (K). The game starts in a window and remembers its size,
+position and full screen state; `--window` and `--fullscreen` on the
+command line override that.
 
 Defaults: graphics set naramura, sound set jorito, filter xBR. The window
 opens as large as fits on the screen and can be resized or zoomed; the
 filters show their difference when the window is larger than 640x400.
 
-Settings (`MoG.cfg`, and `port.cfg` for the scaling filter) are stored in `~/config/settings/MazeOfGalious/`.
+Settings (`MoG.cfg`, and `port.cfg` for the filter, window and vertical
+sync) are stored in `~/config/settings/MazeOfGalious/`. `vsync=0` in
+`port.cfg` turns waiting for the screen refresh off; it only has an effect
+with drivers that report the refresh (not with VESA, as in VirtualBox).
+
+The F4 timing display shows per second: filter time per frame (average and
+maximum), the share of the picture filtered again (xBR only redoes the parts
+that changed), drawing time, frames per second and the vertical sync state.
+The same line is printed in the Terminal.
 The package installs the executable in `apps/`, the game data in
 `data/MazeOfGalious/` and the documentation in
 `documentation/packages/mazeofgalious/`.

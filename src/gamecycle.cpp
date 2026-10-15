@@ -1332,6 +1332,7 @@ void GameCycle(BYTE *screen,int dx,int dy)
 				tile_print("TO CHANGE THE ZOOM:         PGUP:PGDN",TILE_SIZE_X*2,TILE_SIZE_Y*20,screen,dx,dy);
 				tile_print("TO CHANGE THE GRAPHICS FILTER:     F3",TILE_SIZE_X*2,TILE_SIZE_Y*21,screen,dx,dy);
 				tile_print("TO TOGGLE FULL SCREEN:      ALT ENTER",TILE_SIZE_X*2,TILE_SIZE_Y*22,screen,dx,dy);
+				tile_print("TO SHOW THE FRAME TIMING:          F4",TILE_SIZE_X*2,TILE_SIZE_Y*23,screen,dx,dy);
 
 				found=false;
 				for(i=0;!found && i<MOGK_LAST;i++) {
