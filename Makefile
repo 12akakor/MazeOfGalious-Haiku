@@ -4,7 +4,7 @@
 #   make run        builds and starts the game (windowed)
 #   make test       builds a test binary and compares 1400 frames with the
 #                   golden reference (tests/golden), plus unit tests
-#   make package    builds mazeofgalious-0.63.2-2-x86_64.hpkg (and the extras package)
+#   make package    builds mazeofgalious-0.63.3-1-x86_64.hpkg (and the extras package)
 
 NAME     = MazeOfGalious
 CXX     ?= g++
@@ -19,7 +19,7 @@ LIBS     = -lbe -lmedia
 
 GAME_SRCS = $(wildcard src/*.cpp)
 PLAT_SRCS = src/platform/audio_mixer.cpp src/platform/platform_common.cpp \
-	src/platform/video_scaler.cpp src/platform/keynames.cpp \
+	src/platform/video_scaler.cpp src/platform/keynames.cpp src/platform/resampler.cpp \
 	src/platform/platform_haiku.cpp
 
 OBJS      = $(patsubst src/%.cpp,obj/haiku/%.o,$(GAME_SRCS) $(PLAT_SRCS)) \
@@ -64,7 +64,8 @@ run: $(NAME)
 
 UNIT_SRCS = tests/unit/unit_tests.cpp src/filehandling.cpp \
 	src/platform/audio_mixer.cpp src/platform/platform_common.cpp \
-	src/platform/video_scaler.cpp src/platform/keynames.cpp src/loadpcx.cpp
+	src/platform/video_scaler.cpp src/platform/keynames.cpp src/platform/resampler.cpp \
+	src/loadpcx.cpp
 
 obj/unit_tests: $(UNIT_SRCS) obj/haiku/third_party/stb_vorbis.o
 	@mkdir -p obj

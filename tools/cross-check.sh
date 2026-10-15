@@ -19,7 +19,7 @@ OUT=$(mktemp -d)
 cd "$ROOT"
 n=0
 for f in src/*.cpp src/platform/audio_mixer.cpp src/platform/platform_common.cpp \
-		src/platform/video_scaler.cpp src/platform/keynames.cpp \
+		src/platform/video_scaler.cpp src/platform/keynames.cpp src/platform/resampler.cpp \
 		src/platform/platform_haiku.cpp; do
 	"$HAIKU_CROSS-g++" -std=gnu++17 -O2 -w -Wno-write-strings -Isrc $(echo $INC | sed 's/-I/-idirafter /g') \
 		-c "$f" -o "$OUT/$(basename "$f" .cpp).o"
@@ -27,7 +27,7 @@ for f in src/*.cpp src/platform/audio_mixer.cpp src/platform/platform_common.cpp
 done
 # Test variant (make test): same sources with the deterministic test hooks.
 for f in src/*.cpp src/platform/audio_mixer.cpp src/platform/platform_common.cpp \
-		src/platform/video_scaler.cpp src/platform/keynames.cpp \
+		src/platform/video_scaler.cpp src/platform/keynames.cpp src/platform/resampler.cpp \
 		src/platform/platform_haiku.cpp src/test/testhooks.cpp; do
 	"$HAIKU_CROSS-g++" -std=gnu++17 -O2 -w -Wno-write-strings -Isrc $(echo $INC | sed 's/-I/-idirafter /g') \
 		-DMOG_TESTHOOKS -include src/test/testhooks.h -c "$f" -o "$OUT/test_$(basename "$f" .cpp).o"
