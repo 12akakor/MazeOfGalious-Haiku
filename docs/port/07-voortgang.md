@@ -76,7 +76,7 @@ Gekozen door Akakor uit de verbeterlijst: punt 1, 2, 5, 6 en 8.
 ## 0.63.5-1 (2026-10-16): screenshot
 
 - Op verzoek van Akakor: toets S (standaard) bewaart wat de speler ziet: het beeld met filter, zonder zwarte randen, als PNG in de home-map (`MazeOfGalious <datum> <tijd>.png`, MIME `image/png`). Opslaan gebeurt in een eigen thread; melding onderin beeld en in de Terminal.
-- De toets is de negende vraag in het toetsenscherm (K) en wordt bewaard in `port.cfg` (`screenshot_key`), zodat `MoG.cfg` het upstream-formaat houdt. De hulpregels op dat scherm staan één regel lager.
+- De toets is de negende vraag in het toetsenscherm (K) en wordt bewaard in `port.cfg` (`screenshot_key`), zodat `MoG.cfg` het upstream-formaat houdt. In 0.63.5-2 staan de vragen op dat scherm op opeenvolgende regels (upstream: om de regel), op verzoek van Akakor; de hulpregels staan eronder na een lege regel.
 - Niet actief tijdens toetsen herdefiniëren en wachtwoord typen.
 - PrtScr kan niet: die toets vangt Haiku zelf af (BWindow, `src/kits/interface/Window.cpp`) voor de systeem-screenshot.
 - Extra systeem-kit: `libtranslation` (PNG via de Translation Kit).
