@@ -1291,58 +1291,59 @@ void GameCycle(BYTE *screen,int dx,int dy)
 				if (SUBSTATE>=1) { 
 					sprintf(tmp,plat_key_name((MOGKey)UP_KEY));
 					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*2,screen,dx,dy);
-					tile_print("PRESS A KEY FOR DOWN:",TILE_SIZE_X*2,TILE_SIZE_Y*4,screen,dx,dy);
+					tile_print("PRESS A KEY FOR DOWN:",TILE_SIZE_X*2,TILE_SIZE_Y*3,screen,dx,dy);
 				} /* if */ 
 				if (SUBSTATE>=2) { 
 					sprintf(tmp,plat_key_name((MOGKey)DOWN_KEY));
-					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*4,screen,dx,dy);
-					tile_print("PRESS A KEY FOR LEFT:",TILE_SIZE_X*2,TILE_SIZE_Y*6,screen,dx,dy);
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*3,screen,dx,dy);
+					tile_print("PRESS A KEY FOR LEFT:",TILE_SIZE_X*2,TILE_SIZE_Y*4,screen,dx,dy);
 				} /* if */ 
 				if (SUBSTATE>=3) {  
 					sprintf(tmp,plat_key_name((MOGKey)LEFT_KEY));
-					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*6,screen,dx,dy);
-					tile_print("PRESS A KEY FOR RIGHT:",TILE_SIZE_X*2,TILE_SIZE_Y*8,screen,dx,dy);
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*4,screen,dx,dy);
+					tile_print("PRESS A KEY FOR RIGHT:",TILE_SIZE_X*2,TILE_SIZE_Y*5,screen,dx,dy);
 				} /* if */ 
 				if (SUBSTATE>=4) { 
 					sprintf(tmp,plat_key_name((MOGKey)RIGHT_KEY));
-					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*8,screen,dx,dy);
-					tile_print("PRESS A KEY FOR SWORD:",TILE_SIZE_X*2,TILE_SIZE_Y*10,screen,dx,dy);
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*5,screen,dx,dy);
+					tile_print("PRESS A KEY FOR SWORD:",TILE_SIZE_X*2,TILE_SIZE_Y*6,screen,dx,dy);
 				} /* if */ 
 				if (SUBSTATE>=5) { 
 					sprintf(tmp,plat_key_name((MOGKey)SWORD_KEY));
-					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*10,screen,dx,dy);
-					tile_print("PRESS A KEY FOR WEAPON:",TILE_SIZE_X*2,TILE_SIZE_Y*12,screen,dx,dy);
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*6,screen,dx,dy);
+					tile_print("PRESS A KEY FOR WEAPON:",TILE_SIZE_X*2,TILE_SIZE_Y*7,screen,dx,dy);
 				} /* if */ 
 				if (SUBSTATE>=6) { 
 					sprintf(tmp,plat_key_name((MOGKey)WEAPON_KEY));
-					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*12,screen,dx,dy);
-					tile_print("PRESS A KEY FOR ITEM:",TILE_SIZE_X*2,TILE_SIZE_Y*14,screen,dx,dy);
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*7,screen,dx,dy);
+					tile_print("PRESS A KEY FOR ITEM:",TILE_SIZE_X*2,TILE_SIZE_Y*8,screen,dx,dy);
 				} /* if */ 
 				if (SUBSTATE>=7) {
 					sprintf(tmp,plat_key_name((MOGKey)ITEM_KEY));
-					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*14,screen,dx,dy);
-					tile_print("PRESS A KEY FOR PAUSE:",TILE_SIZE_X*2,TILE_SIZE_Y*16,screen,dx,dy);
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*8,screen,dx,dy);
+					tile_print("PRESS A KEY FOR PAUSE:",TILE_SIZE_X*2,TILE_SIZE_Y*9,screen,dx,dy);
 				} /* if */ 
 				if (SUBSTATE>=8) { 
 					sprintf(tmp,plat_key_name((MOGKey)PAUSE_KEY));
-					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*16,screen,dx,dy);
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*9,screen,dx,dy);
 					/* Port: ninth key, the screenshot key. */
-					tile_print("KEY FOR SCREENSHOT:",TILE_SIZE_X*2,TILE_SIZE_Y*18,screen,dx,dy);
+					tile_print("KEY FOR SCREENSHOT:",TILE_SIZE_X*2,TILE_SIZE_Y*10,screen,dx,dy);
 				} /* if */ 
 				if (SUBSTATE>=9) { 
 					sprintf(tmp,plat_key_name((MOGKey)SCREENSHOT_KEY));
-					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*18,screen,dx,dy);
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*10,screen,dx,dy);
 				} /* if */ 
 
 				/* Port: Haiku/RenkuOS keys (upstream: F12/APPLE+Q), plus the
-				   port's filter, full screen and timing keys. One row lower
-				   than upstream to make room for the screenshot key. */
-				tile_print("TO GO TO THE TITLE SCREEN PRESS:  ESC",TILE_SIZE_X*2,TILE_SIZE_Y*19,screen,dx,dy);
-				tile_print("TO EXIT THE GAME PRESS:  F12 OR ALT Q",TILE_SIZE_X*2,TILE_SIZE_Y*20,screen,dx,dy);
-				tile_print("TO CHANGE THE ZOOM:         PGUP:PGDN",TILE_SIZE_X*2,TILE_SIZE_Y*21,screen,dx,dy);
-				tile_print("TO CHANGE THE GRAPHICS FILTER:     F3",TILE_SIZE_X*2,TILE_SIZE_Y*22,screen,dx,dy);
-				tile_print("TO TOGGLE FULL SCREEN:      ALT ENTER",TILE_SIZE_X*2,TILE_SIZE_Y*23,screen,dx,dy);
-				tile_print("TO SHOW THE FRAME TIMING:          F4",TILE_SIZE_X*2,TILE_SIZE_Y*24,screen,dx,dy);
+				   port's filter, full screen and timing keys. The questions
+				   are on consecutive rows (upstream: every other row) to make
+				   room for the screenshot key. */
+				tile_print("TO GO TO THE TITLE SCREEN PRESS:  ESC",TILE_SIZE_X*2,TILE_SIZE_Y*13,screen,dx,dy);
+				tile_print("TO EXIT THE GAME PRESS:  F12 OR ALT Q",TILE_SIZE_X*2,TILE_SIZE_Y*14,screen,dx,dy);
+				tile_print("TO CHANGE THE ZOOM:         PGUP:PGDN",TILE_SIZE_X*2,TILE_SIZE_Y*15,screen,dx,dy);
+				tile_print("TO CHANGE THE GRAPHICS FILTER:     F3",TILE_SIZE_X*2,TILE_SIZE_Y*16,screen,dx,dy);
+				tile_print("TO TOGGLE FULL SCREEN:      ALT ENTER",TILE_SIZE_X*2,TILE_SIZE_Y*17,screen,dx,dy);
+				tile_print("TO SHOW THE FRAME TIMING:          F4",TILE_SIZE_X*2,TILE_SIZE_Y*18,screen,dx,dy);
 
 				found=false;
 				for(i=0;!found && i<MOGK_LAST;i++) {
