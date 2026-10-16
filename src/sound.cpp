@@ -182,50 +182,41 @@ MogStream *Sound_create_stream(char *file)
 } /* Sound_create_stream */ 
 
 
+/* Port: open (and start decoding) the music files before taking the audio
+   lock. Opening an Ogg file can take tens of milliseconds on a slow or
+   single-CPU machine; with the lock held the audio thread had to wait, which
+   made the sound stutter at every music change. */
 void Sound_create_music(char *f1,char *f2,char *f3)
 {
-	mixer_lock();
 	char tmp[128];
-	int seq_len=0;
+	char *files[3]={f1,f2,f3};
+	MogStream *streams[3]={0,0,0};
+	char realfiles[3][128];
+	int i;
 
-	if (sound_enabled) {
-		if (f1!=0) {
-			Sound_obtain_file_name(f1,tmp);
-			strcpy(music_files[0],f1);
-			strcpy(music_realfiles[0],tmp);
-			music_loaded[0]=true;
-			music_sound[0]=Sound_create_stream(f1);
-			seq_len=1;
-		} else {
-			music_files[0][0]=0;
-			music_loaded[0]=false;
+	if (!sound_enabled) return;
+	for(i=0;i<3;i++) {
+		if (files[i]!=0) {
+			Sound_obtain_file_name(files[i],tmp);
+			strcpy(realfiles[i],tmp);
+			streams[i]=Sound_create_stream(files[i]);
 		} /* if */ 
-		if (f2!=0) {
-			Sound_obtain_file_name(f2,tmp);
-			strcpy(music_files[1],f2);
-			strcpy(music_realfiles[1],tmp);
-			music_loaded[1]=true;
-			music_sound[1]=Sound_create_stream(f2);
-			seq_len=2;
-		} else {
-			music_files[1][0]=0;
-			music_loaded[1]=false;
-		} /* if */ 
-		if (f3!=0) {
-			Sound_obtain_file_name(f3,tmp);
-			strcpy(music_files[2],f3);
-			strcpy(music_realfiles[2],tmp);
-			music_loaded[2]=true;
-			music_sound[2]=Sound_create_stream(f3);
-			seq_len=3;
-		} else {
-			music_files[2][0]=0;
-			music_loaded[2]=false;
-		} /* if */ 
+	} /* for */ 
 
-		music_position=0;
-		playing_music=true;
-	} /* if */ 
+	mixer_lock();
+	for(i=0;i<3;i++) {
+		if (files[i]!=0) {
+			strcpy(music_files[i],files[i]);
+			strcpy(music_realfiles[i],realfiles[i]);
+			music_loaded[i]=true;
+			music_sound[i]=streams[i];
+		} else {
+			music_files[i][0]=0;
+			music_loaded[i]=false;
+		} /* if */ 
+	} /* for */ 
+	music_position=0;
+	playing_music=true;
 	mixer_unlock();
 } /* Sound_create_music */ 
 
@@ -248,32 +239,38 @@ void Sound_subst_music_now(char *f)
 
 void Sound_release_music(void)
 {
-	mixer_lock();
+	MogStream *closing[3]={0,0,0};
 	int i;
 
+	mixer_lock();
 	if (sound_enabled) {
 		playing_music=false;
 		for(i=0;i<3;i++) {
-			if (music_loaded[i]) { stream_close(music_sound[i]); music_sound[i]=0; }
+			if (music_loaded[i]) { closing[i]=music_sound[i]; music_sound[i]=0; }
 			music_loaded[i]=false;
 		} /* if */ 
 	} /* if */ 
 	mixer_unlock();
+	/* Port: close outside the audio lock. */
+	for(i=0;i<3;i++) stream_close(closing[i]);
 } /* Sound_release_music */ 
 
 
 void Sound_temporary_release_music(void)
 {
-	mixer_lock();
+	MogStream *closing[3]={0,0,0};
 	int i;
 
+	mixer_lock();
 	if (sound_enabled) {
 		playing_music=false;
 		for(i=0;i<3;i++) {
-			if (music_loaded[i]) { stream_close(music_sound[i]); music_sound[i]=0; }
+			if (music_loaded[i]) { closing[i]=music_sound[i]; music_sound[i]=0; }
 		} /* if */ 
 	} /* if */ 
 	mixer_unlock();
+	/* Port: close outside the audio lock. */
+	for(i=0;i<3;i++) stream_close(closing[i]);
 } /* Sound_release_music */ 
 
 
@@ -295,41 +292,26 @@ void Sound_unpause_music(void)
 
 void music_recovery(void)
 {
-	mixer_lock();	
+	/* Port: reopen the streams of the current music (after a sound set
+	   change) before taking the audio lock, see Sound_create_music(). */
 	char tmp[128];
-	int seq_len=0;
-//	FILE *fp;
+	MogStream *streams[3]={0,0,0};
+	int i;
 
-	if (sound_enabled) {
-//		fp=fopen("report.txt","w");
-//		fprintf(fp,"%s\n%s\n%s\n",music_files[0],music_files[1],music_files[2]);
-//		fclose(fp);
-
-		if (music_loaded[0]) { 
-			music_loaded[0]=true;
-			Sound_obtain_file_name(music_files[0],tmp);
-			strcpy(music_realfiles[0],tmp);
-			music_sound[0]=Sound_create_stream(music_files[0]);
-			seq_len=1;
+	if (!sound_enabled) return;
+	for(i=0;i<3;i++) {
+		if (music_loaded[i]) {
+			Sound_obtain_file_name(music_files[i],tmp);
+			strcpy(music_realfiles[i],tmp);
+			streams[i]=Sound_create_stream(music_files[i]);
 		} /* if */ 
-		if (music_loaded[1]) { 
-			music_loaded[1]=true;
-			Sound_obtain_file_name(music_files[1],tmp);
-			strcpy(music_realfiles[1],tmp);
-			music_sound[1]=Sound_create_stream(music_files[1]);
-			seq_len=2;
-		} /* if */ 
-		if (music_loaded[2]) { 
-			music_loaded[2]=true;
-			Sound_obtain_file_name(music_files[2],tmp);
-			strcpy(music_realfiles[2],tmp);
-			music_sound[2]=Sound_create_stream(music_files[2]);
-			seq_len=3;
-		} /* if */ 
+	} /* for */ 
 
-		playing_music=true;
-	} /* if */ 
-
+	mixer_lock();
+	for(i=0;i<3;i++) {
+		if (music_loaded[i]) music_sound[i]=streams[i];
+	} /* for */ 
+	playing_music=true;
 	mixer_unlock();
 } /* music_recovery */ 
 

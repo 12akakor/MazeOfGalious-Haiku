@@ -11,7 +11,7 @@ resource app_flags B_SINGLE_LAUNCH;
 resource app_version {
 	major  = 0,
 	middle = 63,
-	minor  = 3,
+	minor  = 4,
 
 	variety = B_APPV_FINAL,
 	internal = 1548,
