@@ -569,8 +569,12 @@ update_stats(Scaler* scaler, bigtime_t filterTime, bigtime_t now)
 		st.filterMax / 1000.0, tiles,
 		st.draws > 0 ? st.drawSum / 1000.0 / st.draws : 0.0,
 		st.drawMax / 1000.0, st.frames / seconds, vsync);
-	if (sShowStats)
+	if (sShowStats) {
+		/* Flush: with "| tee" stdout is fully buffered and lines would be
+		   lost when the game is stopped with Ctrl+C. */
 		printf("%s\n", sStatsText);
+		fflush(stdout);
+	}
 	memset(&st, 0, sizeof(st));
 	st.start = now;
 }
@@ -681,6 +685,7 @@ plat_toggle_stats(void)
 	sShowStats = !sShowStats;
 	if (sShowStats)
 		printf("Timing display on (F4 to hide)\n");
+	fflush(stdout);
 	if (sWindow != NULL && sWindow->Lock()) {
 		sView->Invalidate();
 		sWindow->Unlock();
