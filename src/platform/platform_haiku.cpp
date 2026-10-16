@@ -15,17 +15,23 @@
 
 #include <Application.h>
 #include <Bitmap.h>
+#include <BitmapStream.h>
 #include <Directory.h>
 #include <Entry.h>
+#include <File.h>
 #include <Font.h>
 #include <FindDirectory.h>
 #include <Locker.h>
 #include <MediaDefs.h>
+#include <NodeInfo.h>
 #include <OS.h>
 #include <Path.h>
 #include <Roster.h>
 #include <Screen.h>
 #include <SoundPlayer.h>
+#include <String.h>
+#include <TranslatorFormats.h>
+#include <TranslatorRoster.h>
 #include <View.h>
 #include <Window.h>
 
@@ -36,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 
@@ -126,6 +133,11 @@ struct Stats {
 Stats sStats;
 char sStatsText[200] = "";
 
+/* Short message at the bottom (e.g. "Screenshot saved"), shown until
+   sMessageUntil. Protected by sFrameLock. */
+char sMessage[B_PATH_NAME_LENGTH + 64] = "";
+bigtime_t sMessageUntil = 0;
+
 BLocker sAudioLock("mog audio");
 BSoundPlayer* sPlayer = NULL;
 PlatAudioCallback sAudioCallback = NULL;
@@ -185,7 +197,9 @@ public:
 			DrawBitmap(sFront, sFront->Bounds(), bounds);
 		}
 		if (sShowStats)
-			_DrawStats();
+			_DrawLabel(sStatsText, false);
+		if (sMessage[0] != '\0' && system_time() < sMessageUntil)
+			_DrawLabel(sMessage, true);
 		/* Wait until the app_server has used the bitmap before the game
 		   thread may write into it again. */
 		Sync();
@@ -226,21 +240,23 @@ private:
 			sVsyncState = -1;
 	}
 
-	void _DrawStats()
+	/* Yellow text on black, top left or bottom left. */
+	void _DrawLabel(const char* text, bool bottom)
 	{
 		BFont font(be_fixed_font);
 		font.SetSize(13);
 		SetFont(&font);
 		font_height height;
 		font.GetHeight(&height);
-		float width = StringWidth(sStatsText);
+		float width = StringWidth(text);
 		float lineHeight = ceilf(height.ascent + height.descent);
+		float top = bottom ? Bounds().bottom - lineHeight - 10 : 4;
 		SetDrawingMode(B_OP_COPY);
 		SetHighColor(0, 0, 0);
-		FillRect(BRect(4, 4, 4 + width + 10, 4 + lineHeight + 6));
+		FillRect(BRect(4, top, 4 + width + 10, top + lineHeight + 6));
 		SetHighColor(255, 220, 0);
 		SetLowColor(0, 0, 0);
-		DrawString(sStatsText, BPoint(9, 7 + ceilf(height.ascent)));
+		DrawString(text, BPoint(9, top + 3 + ceilf(height.ascent)));
 	}
 
 	BScreen*	fScreen = NULL;
@@ -676,6 +692,135 @@ bool
 plat_is_fullscreen(void)
 {
 	return sFullscreen;
+}
+
+
+/* Shows a message for a few seconds (any thread). */
+static void
+show_message(const char* text)
+{
+	sFrameLock.Lock();
+	snprintf(sMessage, sizeof(sMessage), "%s", text);
+	sMessageUntil = system_time() + 3000000;
+	sFrameLock.Unlock();
+	printf("%s\n", text);
+	fflush(stdout);
+}
+
+
+/* Writes the bitmap as PNG into the home folder; owns the bitmap. Runs on
+   its own thread so the game does not wait for the encoding. */
+static int32
+screenshot_thread(void* data)
+{
+	BBitmap* bitmap = (BBitmap*)data;
+	BPath folder;
+	status_t status = find_directory(B_USER_DIRECTORY, &folder);
+
+	BPath path;
+	if (status == B_OK) {
+		time_t now = time(NULL);
+		struct tm local;
+		localtime_r(&now, &local);
+		char stamp[64];
+		strftime(stamp, sizeof(stamp), "MazeOfGalious %Y-%m-%d %H.%M.%S",
+			&local);
+		for (int n = 1; n < 100; n++) {
+			BString name(stamp);
+			if (n > 1)
+				name << " " << n;
+			name << ".png";
+			path.SetTo(folder.Path(), name.String());
+			if (!BEntry(path.Path()).Exists())
+				break;
+		}
+	}
+
+	BBitmapStream stream(bitmap);
+	if (status == B_OK) {
+		BFile file(path.Path(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
+		status = file.InitCheck();
+		if (status == B_OK) {
+			status = BTranslatorRoster::Default()->Translate(&stream, NULL,
+				NULL, &file, B_PNG_FORMAT);
+		}
+		if (status == B_OK)
+			BNodeInfo(&file).SetType("image/png");
+	}
+	BBitmap* detached = NULL;
+	stream.DetachBitmap(&detached);
+	delete detached;
+
+	char text[B_PATH_NAME_LENGTH + 64];
+	if (status == B_OK)
+		snprintf(text, sizeof(text), "Screenshot saved: %s", path.Path());
+	else {
+		if (path.Path() != NULL)
+			unlink(path.Path());
+		snprintf(text, sizeof(text), "Screenshot failed: %s",
+			strerror(status));
+	}
+	show_message(text);
+	return 0;
+}
+
+
+void
+plat_save_screenshot(void)
+{
+	sFrameLock.Lock();
+	if (sFront == NULL) {
+		sFrameLock.Unlock();
+		return;
+	}
+	int width = sFront->Bounds().IntegerWidth() + 1;
+	int height = sFront->Bounds().IntegerHeight() + 1;
+
+	/* Only the picture, not the black borders. */
+	int x, y, w, h;
+	if (strcmp(plat_scaler_name(), "nearest") == 0) {
+		int factor;
+		NearestScaler::Layout(sWidth, sHeight, width, height, &factor, &x, &y);
+		w = sWidth * factor;
+		h = sHeight * factor;
+		if (x < 0) {
+			w += 2 * x;
+			x = 0;
+		}
+		if (y < 0) {
+			h += 2 * y;
+			y = 0;
+		}
+		w = w < width - x ? w : width - x;
+		h = h < height - y ? h : height - y;
+	} else
+		scaler_fit(sWidth, sHeight, width, height, &x, &y, &w, &h);
+
+	BBitmap* shot = new BBitmap(BRect(0, 0, w - 1, h - 1), B_RGB32);
+	if (shot->InitCheck() == B_OK) {
+		const uint8* src = (const uint8*)sFront->Bits();
+		uint8* dst = (uint8*)shot->Bits();
+		int32 srcRow = sFront->BytesPerRow();
+		int32 dstRow = shot->BytesPerRow();
+		for (int row = 0; row < h; row++) {
+			memcpy(dst + (size_t)row * dstRow,
+				src + (size_t)(y + row) * srcRow + (size_t)x * 4,
+				(size_t)w * 4);
+		}
+	}
+	sFrameLock.Unlock();
+
+	if (shot->InitCheck() != B_OK) {
+		delete shot;
+		show_message("Screenshot failed: out of memory");
+		return;
+	}
+	thread_id thread = spawn_thread(screenshot_thread, "MoG screenshot",
+		B_LOW_PRIORITY, shot);
+	if (thread < B_OK || resume_thread(thread) != B_OK) {
+		delete shot;
+		show_message("Screenshot failed: cannot start a thread");
+	}
 }
 
 

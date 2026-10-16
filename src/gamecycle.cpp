@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "platform/platform.h"
+#include "port_settings.h"
 #include "sound.h"
 #include "MOGtypes.h"
 
@@ -297,6 +298,8 @@ int zoom=640;
 /* Teclas: */ 
 MOGKey UP_KEY=MOGK_q,DOWN_KEY=MOGK_a,LEFT_KEY=MOGK_o,RIGHT_KEY=MOGK_p;
 MOGKey SWORD_KEY=MOGK_SPACE,WEAPON_KEY=MOGK_m,ITEM_KEY=MOGK_F1,PAUSE_KEY=MOGK_F2;
+/* Port: screenshot key (stored in port.cfg, not in MoG.cfg). */
+MOGKey SCREENSHOT_KEY=MOGK_s;
 MOGKey last_word[16];
 
 char password[48]="UR3FUR3FUR4F423RUR3FUR3FUR3FUR3FUR3FUR3FURS48";
@@ -1323,16 +1326,23 @@ void GameCycle(BYTE *screen,int dx,int dy)
 				if (SUBSTATE>=8) { 
 					sprintf(tmp,plat_key_name((MOGKey)PAUSE_KEY));
 					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*16,screen,dx,dy);
+					/* Port: ninth key, the screenshot key. */
+					tile_print("KEY FOR SCREENSHOT:",TILE_SIZE_X*2,TILE_SIZE_Y*18,screen,dx,dy);
+				} /* if */ 
+				if (SUBSTATE>=9) { 
+					sprintf(tmp,plat_key_name((MOGKey)SCREENSHOT_KEY));
+					tile_print(strupr(tmp),TILE_SIZE_X*26,TILE_SIZE_Y*18,screen,dx,dy);
 				} /* if */ 
 
-				tile_print("TO GO TO THE TITLE SCREEN PRESS:  ESC",TILE_SIZE_X*2,TILE_SIZE_Y*18,screen,dx,dy);
 				/* Port: Haiku/RenkuOS keys (upstream: F12/APPLE+Q), plus the
-				   port's filter and full screen keys. */
-				tile_print("TO EXIT THE GAME PRESS:  F12 OR ALT Q",TILE_SIZE_X*2,TILE_SIZE_Y*19,screen,dx,dy);
-				tile_print("TO CHANGE THE ZOOM:         PGUP:PGDN",TILE_SIZE_X*2,TILE_SIZE_Y*20,screen,dx,dy);
-				tile_print("TO CHANGE THE GRAPHICS FILTER:     F3",TILE_SIZE_X*2,TILE_SIZE_Y*21,screen,dx,dy);
-				tile_print("TO TOGGLE FULL SCREEN:      ALT ENTER",TILE_SIZE_X*2,TILE_SIZE_Y*22,screen,dx,dy);
-				tile_print("TO SHOW THE FRAME TIMING:          F4",TILE_SIZE_X*2,TILE_SIZE_Y*23,screen,dx,dy);
+				   port's filter, full screen and timing keys. One row lower
+				   than upstream to make room for the screenshot key. */
+				tile_print("TO GO TO THE TITLE SCREEN PRESS:  ESC",TILE_SIZE_X*2,TILE_SIZE_Y*19,screen,dx,dy);
+				tile_print("TO EXIT THE GAME PRESS:  F12 OR ALT Q",TILE_SIZE_X*2,TILE_SIZE_Y*20,screen,dx,dy);
+				tile_print("TO CHANGE THE ZOOM:         PGUP:PGDN",TILE_SIZE_X*2,TILE_SIZE_Y*21,screen,dx,dy);
+				tile_print("TO CHANGE THE GRAPHICS FILTER:     F3",TILE_SIZE_X*2,TILE_SIZE_Y*22,screen,dx,dy);
+				tile_print("TO TOGGLE FULL SCREEN:      ALT ENTER",TILE_SIZE_X*2,TILE_SIZE_Y*23,screen,dx,dy);
+				tile_print("TO SHOW THE FRAME TIMING:          F4",TILE_SIZE_X*2,TILE_SIZE_Y*24,screen,dx,dy);
 
 				found=false;
 				for(i=0;!found && i<MOGK_LAST;i++) {
@@ -1370,11 +1380,15 @@ void GameCycle(BYTE *screen,int dx,int dy)
 							   SUBSTATE++;
 							   found=true;
 							   break;
+						case 8:SCREENSHOT_KEY=(MOGKey)i;
+							   SUBSTATE++;
+							   found=true;
+							   break;
 						} /* switch */ 
 					} /* if */ 
 				} /* for */ 
 
-				if (SUBSTATE==8 && 
+				if (SUBSTATE==9 && 
 					((keyboard[MOGK_SPACE] && !old_keyboard[MOGK_SPACE]) ||
 					 (keyboard[MOGK_RETURN] && !old_keyboard[MOGK_RETURN]) ||
 					 (keyboard[MOGK_ESCAPE] && !old_keyboard[MOGK_ESCAPE]) ||
@@ -1382,6 +1396,7 @@ void GameCycle(BYTE *screen,int dx,int dy)
 					STATE=2;
 					SUBSTATE=0;
 					guardar_configuracion("MoG.cfg");
+					port_settings_save();
 				} /* if */ 
 			}
 			break;

@@ -3,6 +3,7 @@
  * format). Stored as "key=value" lines in port.cfg in the settings directory.
  *   scaler=xbr|sharp|nearest
  *   vsync=1|0
+ *   screenshot_key=<MOGK_* code> (default s)
  *   fullscreen=1|0
  *   window=x,y,width,height
  */

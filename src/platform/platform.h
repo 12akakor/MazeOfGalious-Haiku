@@ -48,6 +48,10 @@ const char* plat_scaler_name(void);
    second. */
 void plat_toggle_stats(void);
 
+/* Saves the picture as shown (filter applied, without black borders) as a
+   PNG file in the home folder, in the background. */
+void plat_save_screenshot(void);
+
 /* Wait for the screen refresh before drawing (less tearing). Only works
    with graphics drivers that report the refresh; ignored otherwise. */
 void plat_set_vsync(bool enabled);

@@ -83,11 +83,20 @@ Noteer per punt OK of het probleem.
 | 29 | Afsluiten in volledig scherm, opnieuw starten | Start in volledig scherm; `--window` op de commandoregel start toch in een venster |
 | 30 | K op titelscherm | Toetsenscherm noemt ook F4 |
 
+## 4d. Screenshot (0.63.5)
+
+| # | Controle | Verwacht |
+|---|---|---|
+| 31 | S tijdens het spel | Gele regel onderin "Screenshot saved: /boot/home/MazeOfGalious ... .png"; geen hapering |
+| 32 | Bestand openen (dubbelklik) | Opent in ShowImage; het beeld zoals in het venster, met filter, zonder zwarte randen |
+| 33 | K op titelscherm | Negende vraag "KEY FOR SCREENSHOT"; na kiezen van een andere toets maakt die toets de screenshot, ook na opnieuw starten |
+| 34 | Toetsen herdefiniëren en wachtwoord typen | Geen screenshots in die schermen |
+
 ## 5. Pakket
 
     make package
-    pkgman install ./mazeofgalious-0.63.4-1-x86_64.hpkg
-    pkgman install ./mazeofgalious_extras-0.63.4-1-any.hpkg   (optioneel, extra sets)
+    pkgman install ./mazeofgalious-0.63.5-1-x86_64.hpkg
+    pkgman install ./mazeofgalious_extras-0.63.5-1-any.hpkg   (optioneel, extra sets)
 
 Controle: "Maze of Galious" staat in het Deskbar-menu onder Applications (alleen het programma, geen mappen) en start van daaruit in een venster.
 

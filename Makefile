@@ -4,7 +4,7 @@
 #   make run        builds and starts the game (windowed)
 #   make test       builds a test binary and compares 1400 frames with the
 #                   golden reference (tests/golden), plus unit tests
-#   make package    builds mazeofgalious-0.63.4-1-x86_64.hpkg (and the extras package)
+#   make package    builds mazeofgalious-0.63.5-1-x86_64.hpkg (and the extras package)
 
 NAME     = MazeOfGalious
 CXX     ?= g++
@@ -15,7 +15,7 @@ CXXFLAGS = -O2 -g -std=gnu++17 -Isrc -Wall -Wno-write-strings -Wno-unused \
 	-Wno-comment -Wno-format-overflow -Wno-format-truncation \
 	-Wno-stringop-truncation
 CFLAGS   = -O2 -g -w
-LIBS     = -lbe -lmedia
+LIBS     = -lbe -lmedia -ltranslation
 
 GAME_SRCS = $(wildcard src/*.cpp)
 PLAT_SRCS = src/platform/audio_mixer.cpp src/platform/platform_common.cpp \
