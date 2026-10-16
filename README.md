@@ -2,7 +2,7 @@
 
 Native port of the Brain Games remake of *Knightmare II: The Maze of Galious*
 (Konami, MSX, 1987) to Haiku and RenkuOS. The game uses only the Be API
-(`libbe`, `libmedia`).
+(`libbe`, `libmedia`, `libtranslation`).
 
 Based on the upstream nightly `mog-svn-20120228` (game code identical to
 0.63.1548). Upstream: https://mog.jorito.net/
@@ -12,8 +12,8 @@ Based on the upstream nightly `mog-svn-20120228` (game code identical to
     make            # builds ./MazeOfGalious
     make run        # windowed
     make test       # unit tests + 1400-frame comparison with the reference
-    make package    # mazeofgalious-0.63.4-1-x86_64.hpkg and
-                    # mazeofgalious_extras-0.63.4-1-any.hpkg (extra sets)
+    make package    # mazeofgalious-0.63.5-1-x86_64.hpkg and
+                    # mazeofgalious_extras-0.63.5-1-any.hpkg (extra sets)
 
 Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 `mimeset`, `package`; on Haiku: `pkgman install haiku_devel` if missing).
@@ -22,7 +22,7 @@ Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 
 Cursor keys move/jump/climb, Space attacks, M fires the secondary weapon,
 F1 item screen, F2 pause, F3 scaling filter (xBR, nearest, sharp), F4 timing
-display, F10/9 graphic set, F11/0 sound set, PgUp/PgDn zoom,
+display, S screenshot, F10/9 graphic set, F11/0 sound set, PgUp/PgDn zoom,
 Esc title screen, Alt+Enter full screen, F12 quit. Keys can be redefined on
 the title screen (K). The game starts in a window and remembers its size,
 position and full screen state; `--window` and `--fullscreen` on the
@@ -36,6 +36,11 @@ Settings (`MoG.cfg`, and `port.cfg` for the filter, window and vertical
 sync) are stored in `~/config/settings/MazeOfGalious/`. `vsync=0` in
 `port.cfg` turns waiting for the screen refresh off; it only has an effect
 with drivers that report the refresh (not with VESA, as in VirtualBox).
+
+S (or the key chosen as the ninth key on the K screen) saves a screenshot
+of the picture as shown, filter included and without black borders, as
+`MazeOfGalious <date> <time>.png` in the home folder. The key is stored
+in `port.cfg` (`screenshot_key`).
 
 The F4 timing display shows per second: filter time per frame (average and
 maximum), the share of the picture filtered again (xBR only redoes the parts

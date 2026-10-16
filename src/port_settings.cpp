@@ -7,6 +7,8 @@
 #include "filehandling.h"
 #include "platform/platform.h"
 
+extern MOGKey SCREENSHOT_KEY;
+
 
 void port_settings_load(bool *fullscreen)
 {
@@ -21,6 +23,10 @@ void port_settings_load(bool *fullscreen)
 		*value++=0;
 		value[strcspn(value,"\r\n ")]=0;
 		if (strcmp(line,"scaler")==0) plat_set_scaler(value);
+		if (strcmp(line,"screenshot_key")==0) {
+			int key=atoi(value);
+			if (key>0 && key<MOGK_LAST) SCREENSHOT_KEY=(MOGKey)key;
+		} /* if */ 
 		if (strcmp(line,"vsync")==0) plat_set_vsync(atoi(value)!=0);
 		if (strcmp(line,"fullscreen")==0 && fullscreen!=NULL) *fullscreen=atoi(value)!=0;
 		if (strcmp(line,"window")==0) {
@@ -41,6 +47,7 @@ void port_settings_save(void)
 
 	fprintf(fp,"scaler=%s\n",plat_scaler_name());
 	fprintf(fp,"vsync=%d\n",plat_vsync() ? 1:0);
+	fprintf(fp,"screenshot_key=%d\n",(int)SCREENSHOT_KEY);
 	fprintf(fp,"fullscreen=%d\n",plat_is_fullscreen() ? 1:0);
 	if (plat_get_window(&x,&y,&w,&h)) fprintf(fp,"window=%d,%d,%d,%d\n",x,y,w,h);
 	fclose(fp);

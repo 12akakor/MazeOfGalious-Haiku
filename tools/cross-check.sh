@@ -13,7 +13,7 @@ ROOT=$(dirname "$(readlink -f "$0")")/..
 : "${HAIKU_CROSS:?set HAIKU_CROSS}" "${HAIKU_HEADERS:?set HAIKU_HEADERS}"
 H=$HAIKU_HEADERS
 INC="-I$H -I$H/os -I$H/os/app -I$H/os/interface -I$H/os/kernel -I$H/os/storage \
--I$H/os/support -I$H/os/media -I$H/os/game -I$H/os/drivers -I$H/os/add-ons/graphics \
+-I$H/os/support -I$H/os/media -I$H/os/translation -I$H/os/game -I$H/os/drivers -I$H/os/add-ons/graphics \
 -I$H/posix -I$H/glibc"
 OUT=$(mktemp -d)
 cd "$ROOT"

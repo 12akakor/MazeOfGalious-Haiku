@@ -2,7 +2,7 @@
 
 ## Project
 
-Native RenkuOS (Haiku-fork, x86_64) port van de Maze of Galious remake (Brain Games, GPL v2). Doel: binary die alleen de Be/Haiku kits gebruikt (`libbe`, `libmedia`).
+Native RenkuOS (Haiku-fork, x86_64) port van de Maze of Galious remake (Brain Games, GPL v2). Doel: binary die alleen de Be/Haiku kits gebruikt (`libbe`, `libmedia`, `libtranslation` voor PNG-screenshots).
 
 Volledig plan: `docs/port/03-stappenplan-claude-code.md`. Werk fase voor fase, stop bij een falende controle.
 

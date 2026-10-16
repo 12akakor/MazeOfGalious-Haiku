@@ -73,6 +73,14 @@ Gekozen door Akakor uit de verbeterlijst: punt 1, 2, 5, 6 en 8.
 
 - Getest op Haiku (VM 1 processor, 2026-10-16): 416 seconden met xBR, elke seconde 25 fps; hoogste filtertijd 25,4 ms (was 52 tot 72 ms), tekenen hoogstens 11,7 ms. Spel loopt vloeiend volgens Akakor; muziek hapert niet meer.
 
+## 0.63.5-1 (2026-10-16): screenshot
+
+- Op verzoek van Akakor: toets S (standaard) bewaart wat de speler ziet: het beeld met filter, zonder zwarte randen, als PNG in de home-map (`MazeOfGalious <datum> <tijd>.png`, MIME `image/png`). Opslaan gebeurt in een eigen thread; melding onderin beeld en in de Terminal.
+- De toets is de negende vraag in het toetsenscherm (K) en wordt bewaard in `port.cfg` (`screenshot_key`), zodat `MoG.cfg` het upstream-formaat houdt. De hulpregels op dat scherm staan één regel lager.
+- Niet actief tijdens toetsen herdefiniëren en wachtwoord typen.
+- PrtScr kan niet: die toets vangt Haiku zelf af (BWindow, `src/kits/interface/Window.cpp`) voor de systeem-screenshot.
+- Extra systeem-kit: `libtranslation` (PNG via de Translation Kit).
+
 ## Publiceren
 
 HaikuPorts accepteert geen AI-bijdragen. Spritz Depot (spritzdepot.desktoponfire.com) indexeert apps van hun auteurs: per app een klein YAML-bestand ("cicheto") met naam, beschrijving en downloadplek, in een eigen git-repository ("bacaro"); geen bouwrecept. De publicatiepagina zelf kon niet automatisch gelezen worden (robots.txt). Nodig dus: een downloadplek voor de .hpkg-bestanden (bijvoorbeeld GitHub-releases) en een git-repository met het YAML-bestand.

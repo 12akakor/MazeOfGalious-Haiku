@@ -13,6 +13,9 @@
 #include "debug.h"
 #include "port_settings.h"
 
+extern MOGKey SCREENSHOT_KEY;
+extern int STATE;
+
 extern void DebugReport(void);
 
 #ifdef MOG_TESTHOOKS
@@ -121,6 +124,12 @@ int game_main(int argc, char** argv)
 			// Port: F4 shows the timing of filter and drawing
 			if (event.key == MOGK_F4) {
 				plat_toggle_stats();
+			}
+
+			// Port: screenshot of what the player sees (key set with K;
+			// not while redefining keys or typing a password)
+			if (event.key == SCREENSHOT_KEY && STATE != 10 && STATE != 14) {
+				plat_save_screenshot();
 			}
 
 			// Port: F3 cycles the scaling filter (xbr, nearest, sharp)
