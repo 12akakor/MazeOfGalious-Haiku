@@ -57,6 +57,11 @@ Gekozen door Akakor uit de verbeterlijst: punt 1, 2, 5, 6 en 8.
 - Upstream-fout opgelost: `fclose(NULL)` als een PCX-bestand ontbreekt.
 - Unit tests: 111 checks. Golden test 1400/1400 identiek. 60 cross-compilaties zonder fouten.
 
+## Versie 3, eerste test op Haiku (2026-10-16)
+
+- Spel draait; met xbr hapert de muziek af en toe en "springt" het poppetje soms een stukje bij rennen. Meting met F4 volgt.
+- Crash na het Konami-logo bij starten vanuit `~/mog-port`: `MoG.cfg` noemde een set uit het extras-pakket die in `~/mog-port/data` niet staat. De upstream-code liet dan `g_path`/`s_path` leeg (NULL). Opgelost in 0.63.3-2: terugval op de standaardset, toetsinstellingen blijven behouden. Nagespeeld en getest op Linux (AddressSanitizer) met vier combinaties.
+
 ## Publiceren
 
 HaikuPorts accepteert geen AI-bijdragen. Spritz Depot (spritzdepot.desktoponfire.com) indexeert apps van hun auteurs: per app een klein YAML-bestand ("cicheto") met naam, beschrijving en downloadplek, in een eigen git-repository ("bacaro"); geen bouwrecept. De publicatiepagina zelf kon niet automatisch gelezen worden (robots.txt). Nodig dus: een downloadplek voor de .hpkg-bestanden (bijvoorbeeld GitHub-releases) en een git-repository met het YAML-bestand.
