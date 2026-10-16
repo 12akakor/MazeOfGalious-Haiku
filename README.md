@@ -82,7 +82,7 @@ SDL version, and they are identical.
 
 **Sound**
 
-- High-quality resampling (windowed sinc) of the 11 and 22 kHz sound
+- High-quality resampling (windowed sinc filter) of the 11 and 22 kHz sound
   sets to 44.1 kHz, instead of linear interpolation.
 - Music files are opened without blocking the sound output, so music
   does not stutter on room changes.
