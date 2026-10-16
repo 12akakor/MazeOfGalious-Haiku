@@ -81,6 +81,11 @@ Gekozen door Akakor uit de verbeterlijst: punt 1, 2, 5, 6 en 8.
 - PrtScr kan niet: die toets vangt Haiku zelf af (BWindow, `src/kits/interface/Window.cpp`) voor de systeem-screenshot.
 - Extra systeem-kit: `libtranslation` (PNG via de Translation Kit).
 
+## GitHub (2026-10-16)
+
+- Gepubliceerd op https://github.com/12akakor/MazeOfGalious-Haiku (branch main) met Engelse README en screenshots. Commit-e-mail vervangen door het GitHub-noreply-adres (hele geschiedenis herschreven).
+- De tag `reference-sdl` kon vanuit deze sessie niet gepusht worden; die is alleen nodig om de golden hashes opnieuw te maken.
+
 ## Publiceren
 
 HaikuPorts accepteert geen AI-bijdragen. Spritz Depot (spritzdepot.desktoponfire.com) indexeert apps van hun auteurs: per app een klein YAML-bestand ("cicheto") met naam, beschrijving en downloadplek, in een eigen git-repository ("bacaro"); geen bouwrecept. De publicatiepagina zelf kon niet automatisch gelezen worden (robots.txt). Nodig dus: een downloadplek voor de .hpkg-bestanden (bijvoorbeeld GitHub-releases) en een git-repository met het YAML-bestand.
