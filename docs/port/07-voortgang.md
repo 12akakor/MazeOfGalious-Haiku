@@ -71,7 +71,7 @@ Gekozen door Akakor uit de verbeterlijst: punt 1, 2, 5, 6 en 8.
 - **Muziek openen en sluiten buiten het audio-slot.** Geluidsuitvoer van de testrun is byte-identiek aan de vorige versie.
 - Unit tests: 115 checks.
 
-- Getest op Haiku (VM 1 processor, 2026-10-16): 416 seconden met xBR, elke seconde 25 fps; hoogste filtertijd 25,4 ms (was 52 tot 72 ms), tekenen hoogstens 11,7 ms. Spel loopt vloeiend volgens Akakor.
+- Getest op Haiku (VM 1 processor, 2026-10-16): 416 seconden met xBR, elke seconde 25 fps; hoogste filtertijd 25,4 ms (was 52 tot 72 ms), tekenen hoogstens 11,7 ms. Spel loopt vloeiend volgens Akakor; muziek hapert niet meer.
 
 ## Publiceren
 
@@ -79,7 +79,6 @@ HaikuPorts accepteert geen AI-bijdragen. Spritz Depot (spritzdepot.desktoponfire
 
 ## Nog te doen
 
-1. Muziek bij kamerwissels nog bevestigen (0.63.4-1).
 2. Daarna RenkuOS-VM (zelfde stappen).
 3. Bevindingen terugkoppelen; daarna eventuele fixes.
 
