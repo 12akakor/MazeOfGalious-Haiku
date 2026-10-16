@@ -2560,6 +2560,9 @@ void guardar_configuracion(char *filename)
 
 
 
+void default_graphics_set(void);
+void default_sound_set(void);
+
 bool cargar_configuracion(char *filename)
 {
 	FILE *fp;
@@ -2583,28 +2586,31 @@ bool cargar_configuracion(char *filename)
 	PAUSE_KEY = (MOGKey) itmp[3];
 
 	/* Graphics path: */ 
-	fscanf(fp,"%s",tmp);
-
+	/* Port: upstream left g_path / s_path unset (NULL) when MoG.cfg names a
+	   set that is not installed (e.g. one from the extras package), which
+	   crashed after the Konami logo. Use the default set instead. */
+	tmp[0]=0;
+	fscanf(fp,"%255s",tmp);
+	act_g_path=-1;
 	for(i=0;i<n_g_paths;i++) {
 		if (strcmp(tmp,g_paths[i])==0) {
 			act_g_path=i;
 			g_path=g_paths[i];
 		} /* if */ 
 	} /* for */ 
-
-	if (act_g_path==-1) return false;
+	if (act_g_path==-1) default_graphics_set();
 
 	/* Sound path: */ 
-	fscanf(fp,"%s",tmp);
-
+	tmp[0]=0;
+	fscanf(fp,"%255s",tmp);
+	act_s_path=-1;
 	for(i=0;i<n_s_paths;i++) {
 		if (strcmp(tmp,s_paths[i])==0) {
 			act_s_path=i;
 			s_path=s_paths[i];
 		} /* if */ 
 	} /* for */ 
-
-	if (act_s_path==-1) return false;
+	if (act_s_path==-1) default_sound_set();
 
 	/* Music and SFX volumes: */ 
 	fscanf(fp,"%i %i",&music_volume,&sfx_volume);
@@ -2615,6 +2621,28 @@ bool cargar_configuracion(char *filename)
 
 
 int find_path(char **paths, int n, const char *name);
+
+// Port: upstream used fixed indices (g_paths[4], s_paths[2]), which read
+// past the array when fewer sets are installed. Look the sets up by name
+// and fall back to "original", then to the first set.
+void default_graphics_set(void)
+{
+	// default gfx set: naramura
+	act_g_path=find_path(g_paths,n_g_paths,"naramura");
+	if (act_g_path<0) act_g_path=find_path(g_paths,n_g_paths,"original");
+	if (act_g_path<0) act_g_path=0;
+	g_path=g_paths[act_g_path];
+} /* default_graphics_set */ 
+
+
+void default_sound_set(void)
+{
+	// default sound set: jorito
+	act_s_path=find_path(s_paths,n_s_paths,"jorito");
+	if (act_s_path<0) act_s_path=find_path(s_paths,n_s_paths,"original");
+	if (act_s_path<0) act_s_path=0;
+	s_path=s_paths[act_s_path];
+} /* default_sound_set */ 
 
 void configuracion_por_defecto(void)
 {
@@ -2627,20 +2655,8 @@ void configuracion_por_defecto(void)
 	ITEM_KEY=MOGK_F1;
 	PAUSE_KEY=MOGK_F2;
 
-	// default gfx set: naramura
-	// Port: upstream used fixed indices (g_paths[4], s_paths[2]), which read
-	// past the array when fewer sets are installed. Look the sets up by name
-	// and fall back to "original", then to the first set.
-	act_g_path=find_path(g_paths,n_g_paths,"naramura");
-	if (act_g_path<0) act_g_path=find_path(g_paths,n_g_paths,"original");
-	if (act_g_path<0) act_g_path=0;
-	g_path=g_paths[act_g_path];
-
-	// default sound set: jorito
-	act_s_path=find_path(s_paths,n_s_paths,"jorito");
-	if (act_s_path<0) act_s_path=find_path(s_paths,n_s_paths,"original");
-	if (act_s_path<0) act_s_path=0;
-	s_path=s_paths[act_s_path];
+	default_graphics_set();
+	default_sound_set();
 
 } /* condiguracion_por_defecto */ 
 
