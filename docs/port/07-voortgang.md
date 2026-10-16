@@ -79,8 +79,8 @@ HaikuPorts accepteert geen AI-bijdragen. Spritz Depot (spritzdepot.desktoponfire
 
 ## Nog te doen
 
-2. Daarna RenkuOS-VM (zelfde stappen).
-3. Bevindingen terugkoppelen; daarna eventuele fixes.
+1. Testen in een RenkuOS-VM (zelfde stappen als op Haiku).
+2. Bevindingen terugkoppelen; daarna eventuele fixes.
 
 ## Bekende beperkingen versie 1
 
