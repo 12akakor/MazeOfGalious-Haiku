@@ -12,8 +12,8 @@ Based on the upstream nightly `mog-svn-20120228` (game code identical to
     make            # builds ./MazeOfGalious
     make run        # windowed
     make test       # unit tests + 1400-frame comparison with the reference
-    make package    # mazeofgalious-0.63.3-3-x86_64.hpkg and
-                    # mazeofgalious_extras-0.63.3-3-any.hpkg (extra sets)
+    make package    # mazeofgalious-0.63.4-1-x86_64.hpkg and
+                    # mazeofgalious_extras-0.63.4-1-any.hpkg (extra sets)
 
 Needs the development tools of the system (`gcc`, `make`, `rc`, `xres`,
 `mimeset`, `package`; on Haiku: `pkgman install haiku_devel` if missing).

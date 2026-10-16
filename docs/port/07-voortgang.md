@@ -62,13 +62,22 @@ Gekozen door Akakor uit de verbeterlijst: punt 1, 2, 5, 6 en 8.
 - Spel draait; met xbr hapert de muziek af en toe en "springt" het poppetje soms een stukje bij rennen. Meting met F4 volgt.
 - Crash na het Konami-logo bij starten vanuit `~/mog-port`: `MoG.cfg` noemde een set uit het extras-pakket die in `~/mog-port/data` niet staat. De upstream-code liet dan `g_path`/`s_path` leeg (NULL). Opgelost in 0.63.3-2: terugval op de standaardset, toetsinstellingen blijven behouden. Nagespeeld en getest op Linux (AddressSanitizer) met vier combinaties.
 
+- F4-meting (VM met 1 processor, i5-6300U): xBR gemiddeld 3 tot 8 ms per beeld, 0 tot 11% opnieuw gefilterd, 25 fps. Pieken van 52 tot 72 ms bij een volledig nieuw beeld (kamerwissel): langer dan de 40 ms van een speltik, dus het spel haalt in met twee tikken achter elkaar (het "sprongetje"). Sharp: gemiddeld 6 ms, maximum meestal onder 25 ms.
+- Tweede oorzaak voor haperende muziek gevonden in de code: bij een muziekwissel werden de Ogg-bestanden geopend terwijl het audio-slot vastgehouden werd; de geluidsthread moest daarop wachten.
+
+## 0.63.4-1 (2026-10-16)
+
+- **xBR met tijdbudget:** per beeld hooguit ongeveer 10 ms xBR-werk. Wat bij een groot verschil (kamerwissel) niet past, toont eerst sharp bilinear en wordt in de volgende beelden afgemaakt (meestal 3 tot 7 beelden, ongeveer 0,1 tot 0,3 s). Daarna is het beeld bit-identiek aan volledig filteren (gecontroleerd op de 1400 testbeelden, beide sets). Hier op 1 thread: maximum per beeld van 52 tot 136 ms naar ongeveer 30 ms.
+- **Muziek openen en sluiten buiten het audio-slot.** Geluidsuitvoer van de testrun is byte-identiek aan de vorige versie.
+- Unit tests: 115 checks.
+
 ## Publiceren
 
 HaikuPorts accepteert geen AI-bijdragen. Spritz Depot (spritzdepot.desktoponfire.com) indexeert apps van hun auteurs: per app een klein YAML-bestand ("cicheto") met naam, beschrijving en downloadplek, in een eigen git-repository ("bacaro"); geen bouwrecept. De publicatiepagina zelf kon niet automatisch gelezen worden (robots.txt). Nodig dus: een downloadplek voor de .hpkg-bestanden (bijvoorbeeld GitHub-releases) en een git-repository met het YAML-bestand.
 
 ## Nog te doen
 
-1. Versie 3 testen in de Haiku-VM: `make test`, checklist punt 15 tot en met 30 in `06-testen-op-haiku.md`.
+1. 0.63.4-1 testen in de Haiku-VM: `make test`, F4-meting op schermen waar het haperde (verwacht: max onder 40 ms), muziek bij kamerwissels.
 2. Daarna RenkuOS-VM (zelfde stappen).
 3. Bevindingen terugkoppelen; daarna eventuele fixes.
 

@@ -451,6 +451,7 @@ test_xbr(void)
 			int dw = sizes[n][0], dh = sizes[n][1];
 			std::vector<uint32_t> a((size_t)dw * dh), b((size_t)dw * dh);
 			XbrScaler cached;
+			cached.SetTileBudget(0);
 			bool equal = true;
 			int partial = 0;
 			for (int f = 0; f < 12; f++) {
@@ -476,6 +477,27 @@ test_xbr(void)
 			CHECK(equal);
 			CHECK(partial == 10);
 		}
+
+		/* With a budget a large change is finished over several frames
+		   (sharp bilinear meanwhile); then the picture is identical. */
+		std::vector<uint32_t> a(1728 * 1080), b(1728 * 1080);
+		XbrScaler budgeted;
+		budgeted.SetTileBudget(100);
+		budgeted.Process(art, 640, 400, 1, a.data(), 1728, 1080, 1728);
+		for (int i = 0; i < 640 * 400; i++)
+			art[i] ^= 0x00080808u;
+		budgeted.Process(art, 640, 400, 1, a.data(), 1728, 1080, 1728);
+		CHECK(budgeted.PendingTiles() == budgeted.TileCount() - 100);
+		CHECK(budgeted.LastDirtyTiles() == 100);
+		int frames = 1;
+		while (budgeted.PendingTiles() > 0 && frames < 50) {
+			budgeted.Process(art, 640, 400, 1, a.data(), 1728, 1080, 1728);
+			frames++;
+		}
+		CHECK(frames == (budgeted.TileCount() + 99) / 100);
+		XbrScaler fresh;
+		fresh.Process(art, 640, 400, 1, b.data(), 1728, 1080, 1728);
+		CHECK(a == b);
 	}
 
 	CHECK(strcmp(scaler_for_name("unknown")->Name(), "xbr") == 0);

@@ -86,8 +86,8 @@ Noteer per punt OK of het probleem.
 ## 5. Pakket
 
     make package
-    pkgman install ./mazeofgalious-0.63.3-3-x86_64.hpkg
-    pkgman install ./mazeofgalious_extras-0.63.3-3-any.hpkg   (optioneel, extra sets)
+    pkgman install ./mazeofgalious-0.63.4-1-x86_64.hpkg
+    pkgman install ./mazeofgalious_extras-0.63.4-1-any.hpkg   (optioneel, extra sets)
 
 Controle: "Maze of Galious" staat in het Deskbar-menu onder Applications (alleen het programma, geen mappen) en start van daaruit in een venster.
 

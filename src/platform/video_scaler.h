@@ -122,6 +122,13 @@ public:
 	/* Forgets the cache: the next frame is filtered completely. */
 			void			Invalidate() { fValid = false; }
 
+	/* Most xBR work per frame after the first one: -1 about 10 ms (the
+	   default), 0 no limit, or a fixed number of tiles. Tiles over the budget show a sharp bilinear version until
+	   they are done; once nothing changes for a few frames the picture is
+	   identical to filtering completely. */
+			void			SetTileBudget(int tiles) { fBudget = tiles; }
+			int				PendingTiles() const { return fPendingCount; }
+
 private:
 			void			_Full(const uint32_t* image);
 			void			_Update(const uint32_t* image);
@@ -135,6 +142,8 @@ private:
 			std::vector<uint32_t> fScaled;		/* xBR result */
 			std::vector<uint32_t> fOutput;		/* resampled, rw x rh */
 			ResampleMap		fMap;
+			ResampleMap		fArtMap;		/* art -> output, for pending tiles */
+			std::vector<uint8_t> fPending;
 			std::vector<int> fOutColumn;	/* first output column per tile column */
 			std::vector<int> fOutRow;		/* first output row per tile row */
 			std::vector<uint8_t> fDirty;
@@ -147,6 +156,8 @@ private:
 			int				fTilesX = 0;
 			int				fTilesY = 0;
 			int				fLastDirty = 0;
+			int				fPendingCount = 0;
+			int				fBudget = -1;
 			bool			fValid = false;
 };
 
@@ -159,6 +170,10 @@ void scaler_fit(int srcWidth, int srcHeight, int dstWidth, int dstHeight,
 /* Returns the scaler for a name ("nearest", "sharp", "xbr"); unknown names
    give "xbr". Never NULL. */
 Scaler* scaler_for_name(const char* name);
+
+/* Limits the worker threads of the filters (0: number of cores, max 4).
+   For tests and measurements. */
+void scaler_set_threads(int threads);
 
 /* Next scaler in the cycle nearest -> sharp -> xbr -> nearest. */
 Scaler* scaler_next(Scaler* current);

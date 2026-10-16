@@ -14,6 +14,7 @@
 #include "video_scaler.h"
 
 #include <algorithm>
+#include <chrono>
 #include <math.h>
 #include <string.h>
 #include <thread>
@@ -21,13 +22,26 @@
 
 namespace {
 
+int sThreadLimit = 0;	/* 0: use the number of cores (max 4) */
+
+
+int
+worker_threads()
+{
+	unsigned int cores = std::thread::hardware_concurrency();
+	int threads = cores == 0 ? 2 : (int)std::min(cores, 4u);
+	if (sThreadLimit > 0)
+		threads = std::min(threads, sThreadLimit);
+	return threads;
+}
+
+
 /* Runs body(begin, end) over [0, count) on a few threads. */
 template<typename Body>
 void
 parallel_rows(int count, Body body)
 {
-	unsigned int cores = std::thread::hardware_concurrency();
-	int threads = cores == 0 ? 2 : (int)std::min(cores, 4u);
+	int threads = worker_threads();
 	if (threads <= 1 || count < 64) {
 		body(0, count);
 		return;
@@ -54,8 +68,7 @@ template<typename Body>
 void
 parallel_items(int count, int minimum, Body body)
 {
-	unsigned int cores = std::thread::hardware_concurrency();
-	int threads = cores == 0 ? 2 : (int)std::min(cores, 4u);
+	int threads = worker_threads();
 	if (threads <= 1 || count < minimum) {
 		body(0, count);
 		return;
@@ -574,6 +587,11 @@ namespace {
 /* Art pixels per side of a cache tile. */
 const int kTile = 16;
 
+/* Default budget: xBR work per frame when the picture changes a lot (a
+   frame lasts 40 ms), and the least number of tiles per worker. */
+const double kFrameBudgetMicros = 10000.0;
+const int kMinimumTiles = 16;
+
 }	// namespace
 
 
@@ -669,6 +687,10 @@ XbrScaler::_Full(const uint32_t* image)
 	fOutRow[fTilesY] = fOutHeight;
 
 	fDirty.assign((size_t)fTilesX * fTilesY, 0);
+	fPending.assign((size_t)fTilesX * fTilesY, 0);
+	fPendingCount = 0;
+	if (!fArtMap.Matches(width, height, fOutWidth, fOutHeight, true))
+		fArtMap.Build(width, height, fOutWidth, fOutHeight, true);
 	fLastDirty = fTilesX * fTilesY;
 	fValid = true;
 }
@@ -730,49 +752,111 @@ XbrScaler::_Update(const uint32_t* image)
 		}
 	}
 
+	/* Tiles to filter: the changed ones first, then the ones left over
+	   from earlier frames. With a budget, the rest is shown with a quick
+	   bilinear version for now and filtered in the next frames. */
 	fDirtyList.clear();
 	for (int i = 0; i < tilesX * tilesY; i++) {
 		if (fDirty[i])
 			fDirtyList.push_back(i);
 	}
-	fLastDirty = (int)fDirtyList.size();
-	if (fDirtyList.empty())
-		return;
-
-	/* 1: xBR for the dirty tiles (each writes its own blocks). */
-	parallel_items((int)fDirtyList.size(), 8, [&](int begin, int end) {
-		for (int i = begin; i < end; i++) {
-			int tx = fDirtyList[i] % tilesX;
-			int ty = fDirtyList[i] / tilesX;
-			xbr_rect(image, fLuma.data(), width, height, factor,
-				fWeights.data(), fScaled.data(), tx * kTile,
-				std::min(width, (tx + 1) * kTile), ty * kTile,
-				std::min(height, (ty + 1) * kTile));
-		}
-	});
-
-	/* 2: resample the output areas that read a dirty tile. An output area
-	   reads its own tile and the tiles to the right and below. */
-	fDirtyList.clear();
-	for (int ty = 0; ty < tilesY; ty++) {
-		for (int tx = 0; tx < tilesX; tx++) {
-			bool right = tx + 1 < tilesX;
-			bool below = ty + 1 < tilesY;
-			const uint8_t* d = fDirty.data() + (size_t)ty * tilesX + tx;
-			if (d[0] || (right && d[1]) || (below && d[tilesX])
-				|| (right && below && d[tilesX + 1]))
-				fDirtyList.push_back(ty * tilesX + tx);
-		}
+	for (int i = 0; i < tilesX * tilesY; i++) {
+		if (fPending[i] && !fDirty[i])
+			fDirtyList.push_back(i);
 	}
-	parallel_items((int)fDirtyList.size(), 8, [&](int begin, int end) {
-		for (int i = begin; i < end; i++) {
-			int tx = fDirtyList[i] % tilesX;
-			int ty = fDirtyList[i] / tilesX;
-			fMap.Apply(fScaled.data(), fOutput.data(), fOutWidth,
-				fOutColumn[tx], fOutColumn[tx + 1], fOutRow[ty],
-				fOutRow[ty + 1]);
+	/* Everything to do is pending until it is filtered. */
+	for (size_t i = 0; i < fDirtyList.size(); i++)
+		fPending[fDirtyList[i]] = 1;
+	if (fBudget > 0 && (int)fDirtyList.size() > fBudget)
+		fDirtyList.resize(fBudget);
+
+	/* 1: xBR for the selected tiles (each writes its own blocks). With the
+	   adaptive budget every worker stops at the deadline; what is not done
+	   stays pending. From here fDirty means: filtered in this frame. */
+	std::fill(fDirty.begin(), fDirty.end(), 0);
+	if (!fDirtyList.empty()) {
+		typedef std::chrono::steady_clock Clock;
+		const bool timed = fBudget < 0;
+		const Clock::time_point deadline = Clock::now()
+			+ std::chrono::microseconds((long long)kFrameBudgetMicros);
+		parallel_items((int)fDirtyList.size(), 8, [&](int begin, int end) {
+			for (int i = begin; i < end; i++) {
+				if (timed && i - begin >= kMinimumTiles && (i & 3) == 0
+					&& Clock::now() > deadline)
+					break;
+				int tx = fDirtyList[i] % tilesX;
+				int ty = fDirtyList[i] / tilesX;
+				xbr_rect(image, fLuma.data(), width, height, factor,
+					fWeights.data(), fScaled.data(), tx * kTile,
+					std::min(width, (tx + 1) * kTile), ty * kTile,
+					std::min(height, (ty + 1) * kTile));
+				fDirty[fDirtyList[i]] = 1;
+			}
+		});
+	}
+	for (int i = 0; i < tilesX * tilesY; i++) {
+		if (fDirty[i])
+			fPending[i] = 0;
+	}
+	fPendingCount = 0;
+	fLastDirty = 0;
+	for (int i = 0; i < tilesX * tilesY; i++) {
+		fPendingCount += fPending[i];
+		fLastDirty += fDirty[i];
+	}
+
+	if (fLastDirty > 0) {
+
+		/* 2: resample the output areas that read a filtered tile. An
+		   output area reads its own tile and the tiles to the right and
+		   below. */
+		fDirtyList.clear();
+		for (int ty = 0; ty < tilesY; ty++) {
+			for (int tx = 0; tx < tilesX; tx++) {
+				bool right = tx + 1 < tilesX;
+				bool below = ty + 1 < tilesY;
+				const uint8_t* d = fDirty.data() + (size_t)ty * tilesX + tx;
+				if (d[0] || (right && d[1]) || (below && d[tilesX])
+					|| (right && below && d[tilesX + 1]))
+					fDirtyList.push_back(ty * tilesX + tx);
+			}
 		}
-	});
+		parallel_items((int)fDirtyList.size(), 8, [&](int begin, int end) {
+			for (int i = begin; i < end; i++) {
+				int tx = fDirtyList[i] % tilesX;
+				int ty = fDirtyList[i] / tilesX;
+				fMap.Apply(fScaled.data(), fOutput.data(), fOutWidth,
+					fOutColumn[tx], fOutColumn[tx + 1], fOutRow[ty],
+					fOutRow[ty + 1]);
+			}
+		});
+	}
+
+	/* 3: tiles still waiting for xBR: quick sharp bilinear version straight
+	   from the art. */
+	if (fPendingCount > 0) {
+		fDirtyList.clear();
+		for (int i = 0; i < tilesX * tilesY; i++) {
+			if (fPending[i])
+				fDirtyList.push_back(i);
+		}
+		parallel_items((int)fDirtyList.size(), 8, [&](int begin, int end) {
+			for (int i = begin; i < end; i++) {
+				int tx = fDirtyList[i] % tilesX;
+				int ty = fDirtyList[i] / tilesX;
+				fArtMap.Apply(image, fOutput.data(), fOutWidth,
+					fOutColumn[tx], fOutColumn[tx + 1], fOutRow[ty],
+					fOutRow[ty + 1]);
+			}
+		});
+	}
+}
+
+
+void
+scaler_set_threads(int threads)
+{
+	sThreadLimit = threads;
 }
 
 
